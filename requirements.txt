@@ -4,6 +4,7 @@ python-telegram-bot==21.0.1
 flask==3.0.3
 flask_login==0.6.3
 flask[async]==3.0.3
+flask-wtf==1.2.1
 python-telegram-bot[job-queue]==21.0.1
 pytz==2024.1
 pip==2.9.9

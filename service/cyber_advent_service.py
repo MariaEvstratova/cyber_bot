@@ -224,6 +224,17 @@ class CyberAdventService:
         return rec
 
 
+    # Получение всех существующих рекомендаций
+    def get_all_recommendations(self) :
+        db_sess = db_session.create_session()
+        db_recs = db_sess.query(Recommendation).all()
+        db_sess.close()
+        all_recs = []
+        for rec in db_recs:
+            all_recs.append(db_recommendation_to_model(rec))
+        return all_recs
+
+
     # Проинициализировать список рекомендаций для адвента
     def init_recommendations(self):
         db_sess = db_session.create_session()

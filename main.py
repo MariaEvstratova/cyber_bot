@@ -4,6 +4,7 @@ import logging
 from data import db_session
 from service.cyber_advent_service import CyberAdventService
 from service.user_service import UserService
+from service.admins_service import AdminsService
 from view.telegram_bot import TelegramBot
 from web.rest_controller import RestController
 
@@ -32,9 +33,11 @@ def main():
     advent_service = CyberAdventService()
     # Инициализируем сервис
     advent_service.init_recommendations()
+    # Сервис для работы с админами
+    admins_service = AdminsService()
 
     # Запуск REST-контроллера в фоне
-    RestController(config.web_port, user_service, advent_service).run_background()
+    RestController(config.web_port, user_service, advent_service, admins_service).run_background()
     # Запуск telegram бота
     TelegramBot(config.bot_token, config.bot_name, user_service, advent_service).run()
 

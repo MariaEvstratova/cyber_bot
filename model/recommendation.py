@@ -9,8 +9,8 @@ class RecommendationModel:
 
     def to_dict(self):
         return {
-            'day': self.num,
-            'text': self.text,
+            'id': self.num,
+            'description': self.text,
         }
 
 

@@ -6,4 +6,4 @@ flask_login==0.6.3
 flask[async]==3.0.3
 python-telegram-bot[job-queue]==21.0.1
 pytz==2024.1
-psycopg2==2.9.9
+pip==2.9.9

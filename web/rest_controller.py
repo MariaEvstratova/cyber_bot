@@ -3,7 +3,7 @@ import threading
 import random
 import datetime
 
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, render_template
 
 from service.cyber_advent_service import CyberAdventService
 from service.user_service import UserService
@@ -23,6 +23,10 @@ class RestController:
         @self.web.route("/health")
         def health():
             return '{"Up!"}'
+
+        @self.web.route("/")
+        def index():
+            return render_template("index.html")
 
         @self.web.route("/api/v1/users", methods=['GET'])
         def get_users():
@@ -67,6 +71,7 @@ class RestController:
                 return json.dumps(recommendation.to_dict(), ensure_ascii=False)
             else:
                 return not_found(f"Рекомендация не найдена")
+
 
         def not_found(message):
             error = { 'error' : message }

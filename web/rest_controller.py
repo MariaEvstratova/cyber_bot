@@ -3,6 +3,7 @@ import threading
 import random
 import datetime
 import jwt as jwt
+from flasgger import Swagger
 
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
 from flask_login import LoginManager
@@ -23,6 +24,7 @@ class RestController:
         self.admins_service = admins_service
         self.web = Flask(__name__)
         self.web.config['JSON_AS_ASCII'] = False
+        self.setup_swagger()
         self.setup_routes()
         self.login_manager = LoginManager()
         self.login_manager.init_app(self.web)
@@ -31,6 +33,42 @@ class RestController:
         def load_user(user_id):
             return self.admins_service.find_user_by_id(user_id)
 
+    def setup_swagger(self):
+        template = {
+            "info": {
+                "title": "CyberBot API",
+                "description": "API для управления CyberBot",
+                "version": "1.0"
+            }
+        }
+        config = {
+            "definitions": {
+                "User": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Идентификатор пользователя"},
+                        "name": { "type": "string", "description": "Имя пользователя" },
+                        "sex": {"type": "string", "description": "Пол"},
+                        "age_group": {"type": "string", "description": "Возрастная группа"},
+                        "registration_day": {"type": "string", "description": "Дата регистрации"},
+                        "schedule": {"type": "string", "description": "Режим отправки рекомендаций"},
+                        "time": {"type": "string", "description": "Время отправки рекомендации"},
+                        "timezone": {"type": "string", "description": "Часовой пояс"},
+                        "period": {"type": "string", "description": "Период напоминаний"},
+                        "advent_start": {"type": "string", "description": "Дата начала адвента"},
+                        "telegram_username": {"type": "string", "description": "Telegram Username"},
+                        "telegram_id": {"type": "string", "description": "Telegram Id"},
+                    },
+                },
+                "Error": {
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "integer", "description": "Ошибка"},
+                    },
+                }
+            },
+        }
+        Swagger(self.web, config=config, template=template, merge=True)
 
     def setup_routes(self):
         @self.web.route("/health")
@@ -71,6 +109,21 @@ class RestController:
 
         @self.web.route("/api/v1/users", methods=['GET'])
         def get_users():
+            """Получение списка пользователей
+                Данное API возвращает список пользователей, использующих CyberBot
+                ---
+                tags:
+                  - Пользователи
+                responses:
+                  200:
+                    description: Список пользователей
+                    content:
+                      application/json:
+                        schema:
+                          type: array
+                          items:
+                            $ref: '#/definitions/User'
+            """
             page_num = int(request.args.get("page_num", 0))
             page_size = int(request.args.get("page_size", 25))
             users = self.user_service.get_users(page_num, page_size)
@@ -78,6 +131,31 @@ class RestController:
 
         @self.web.route("/api/v1/users/<user_id>", methods=['GET'])
         async def get_user(user_id: int):
+            """Получение пользователя по идентификатору
+                Данное API возвращает пользователя по идентификатору, использующего CyberBot
+                ---
+                tags:
+                  - Пользователи
+                parameters:
+                  - name: user_id
+                    in: path
+                    type: string
+                    required: true
+                    example: 1
+                responses:
+                  200:
+                    description: Пользователь
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/definitions/User'
+                  404:
+                    description: Пользователь не найден
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/definitions/Error'
+            """
             user = await self.user_service.find_user_by_id(user_id)
             if user:
                 return json.dumps(user.to_dict(), ensure_ascii=False)

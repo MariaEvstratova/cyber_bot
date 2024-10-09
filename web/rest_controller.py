@@ -2,8 +2,11 @@ import json
 import threading
 import random
 import datetime
+import jwt as jwt
 
-from flask import Flask, request, jsonify, make_response, render_template
+from flask import Flask, request, jsonify, make_response, render_template, flash
+from data.admins import Admins
+from data import db_session
 
 from service.cyber_advent_service import CyberAdventService
 from service.user_service import UserService
@@ -27,6 +30,49 @@ class RestController:
         @self.web.route("/")
         def index():
             return render_template("index.html")
+
+        def create_jwt_token(user_id):
+            payload = {
+                'sub': user_id,
+                'iat': datetime.utcnow(),
+                'exp': datetime.utcnow()
+            }
+            token = jwt.encode(payload, self.web.config['JSON_AS_ASCII'], algorithm='HS256')
+            return token
+
+        @self.web.route('/register', methods=['GET', 'POST'])
+        def register():
+            if request.method == 'POST':
+                username = request.form.get('username')
+                email = request.form.get('email')
+                password = request.form.get('password')
+
+                # Проверка на наличие полей
+                if not username or not email or not password:
+                    flash('Пожалуйста, заполните все поля')
+                    return render_template("register.html")
+
+                # Проверяем, если пользователь уже существует
+                if Admins.query.filter_by(name=username).first() or Admins.query.filter_by(email=email).first():
+                    flash('Пользователь с таким именем или email уже существует')
+                    return render_template("register.html")
+
+                # Хэшируем пароль
+                hashed_password = Admins.set_password(password)
+
+                new_user = Admins(name=username, email=email, hashed_password=hashed_password)
+
+                new_user.jwt_token = create_jwt_token(username)
+                db_sess = db_session.create_session()
+                db_sess.session.add(new_user)
+                db_sess.session.commit()
+
+                flash('Пользователь успешно зарегистрирован. Ваш токен: {}'.format(new_user.jwt_token))
+
+                return render_template("register.html")
+
+            return render_template('register.html')
+
 
         @self.web.route("/api/v1/users", methods=['GET'])
         def get_users():

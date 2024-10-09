@@ -23,7 +23,7 @@ class UserModel:
 
     def to_dict(self):
         return {
-            'user_id': self.user_id,
+            'id': self.user_id,
             'name': self.name,
             'registration_day': self.registration_day.isoformat() if self.registration_day else None,
             'age_group': self.age_group,

@@ -7,3 +7,6 @@ flask[async]==3.0.3
 python-telegram-bot[job-queue]==21.0.1
 pytz==2024.1
 pip==2.9.9
+psycopg2==2.9.9
+PyJWT==2.9.0
+Werkzeug==3.0.4

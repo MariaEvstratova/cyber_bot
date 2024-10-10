@@ -9,12 +9,14 @@ from flask import Flask, request, jsonify, make_response, render_template, flash
 from flask_login import LoginManager
 
 from model.admins import AdminsModel
+from model.recommendation import RecommendationModel
 from service.cyber_advent_service import CyberAdventService
 from service.statistics_service import StatisticsService
 from service.user_service import UserService
 from service.admins_service import AdminsService
 
 from forms.admins import RegisterForm, LoginForm
+from forms.recs import RecsForm
 from web.statistics_api import StatisticsApi
 
 login_manager = LoginManager()
@@ -191,6 +193,19 @@ class RestController:
                 self.admins_service.create_admin(new_admin)
                 return redirect('/')
             return render_template('register.html', title='Регистрация', form=form)
+
+        @self.web.route('/add', methods=['GET', 'POST'])
+        # @self.login_required
+        def add_news():
+            form = RecsForm()
+            if form.validate_on_submit():
+                number = len(self.advent_service.get_all_recommendations()) + 1
+                new_rec = RecommendationModel(num=number, text=form.recommendation.data, media=form.media.data)
+                self.advent_service.create_recommendation(new_rec)
+                return redirect('/')
+            return render_template('rec.html', title='Добавление рекомендации',
+                                   form=form)
+
 
         @self.web.route("/api/private/users", methods=['GET'])
         def get_users():

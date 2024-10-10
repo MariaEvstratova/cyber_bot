@@ -18,9 +18,9 @@ class CyberAdventService:
     def create_recommendation(self, rec_model: RecommendationModel) -> RecommendationModel:
         recommendation = Recommendation()
 
-        recommendation.Id = rec_model.num
-        recommendation.Recommendation = recommendation.recommendation
-        recommendation.media = recommendation.media
+        recommendation.id = rec_model.num
+        recommendation.recommendation = rec_model.text
+        recommendation.media = rec_model.media
         db_sess = db_session.create_session()
         db_sess.add(recommendation)
         db_sess.commit()

@@ -15,6 +15,7 @@ from service.cyber_advent_service import CyberAdventService
 from service.statistics_service import StatisticsService
 from service.user_service import UserService
 from service.admins_service import AdminsService
+from service.statuses_service import StatusRecommendationService
 
 from forms.admins import RegisterForm, LoginForm
 from forms.recs import RecsForm
@@ -31,12 +32,14 @@ class RestController:
                  advent_service: CyberAdventService,
                  admins_service: AdminsService,
                  statistics_service: StatisticsService,
+                 status_recommendation_service: StatusRecommendationService
                  ):
         self.port = port
         self.user_service = user_service
         self.advent_service = advent_service
         self.admins_service = admins_service
         self.statistics_service = statistics_service
+        self.status_recommendation_service = status_recommendation_service
         self.web = Flask(__name__)
         self.web.config['JSON_AS_ASCII'] = False
         self.web.config['SECRET_KEY'] = secret_key
@@ -164,9 +167,14 @@ class RestController:
             return '{"Up!"}'
 
         @self.web.route("/")
-        def index():
+        async def index():
             all_recommendations = self.advent_service.get_all_recommendations()
-            return render_template("index.html", recs=all_recommendations)
+            all_statuses = await self.status_recommendation_service.get_text_of_all_statuses_recommendations()
+            recs = await self.status_recommendation_service.get_text_of_all_statuses_recommendations()
+            status_rec = []
+            for i in range(len(all_statuses)):
+                status_rec.append({'status_object': all_statuses[i], 'text_recommendation': recs[i]})
+            return render_template("index.html", recs=all_recommendations, status_rec=status_rec)
 
         # def create_jwt_token(user_id):
         #     payload = {
@@ -197,7 +205,7 @@ class RestController:
 
         @self.web.route('/rec', methods=['GET', 'POST'])
         # @self.login_required
-        def add_news():
+        def add_recs():
             form = RecsForm()
             if form.validate_on_submit():
                 number = len(self.advent_service.get_all_recommendations()) + 1
@@ -209,7 +217,7 @@ class RestController:
 
         @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
         # @login_required
-        async def edit_news(id):
+        async def edit_recs(id):
             form = RecsForm()
             if request.method == "GET":
                 rec = await self.advent_service.get_recommendation_info_by_id(id)
@@ -232,7 +240,7 @@ class RestController:
                                    )
 
         @self.web.route('/rec_delete/<int:id>', methods=['GET', 'POST'])
-        async def news_delete(id):
+        async def recs_delete(id):
             rec = await self.advent_service.get_recommendation_info_by_id(id)
             if rec:
                 await self.advent_service.delete_recommendation(rec)
@@ -387,7 +395,6 @@ class RestController:
                 telegram_id=user_data['telegram_username'])
             new_user = self.user_service.create_user(user_model)
             return json.dumps(new_user.to_dict(), ensure_ascii=False)
-
 
         def not_found(message):
             error = { 'error' : message }

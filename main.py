@@ -6,6 +6,7 @@ from service.cyber_advent_service import CyberAdventService
 from service.statistics_service import StatisticsService
 from service.user_service import UserService
 from service.admins_service import AdminsService
+from service.statuses_service import StatusRecommendationService
 from view.telegram_bot import TelegramBot
 from web.rest_controller import RestController
 
@@ -38,9 +39,12 @@ def main():
     admins_service = AdminsService()
     # Сервис для сбора статистики
     statistics_service = StatisticsService(user_service, advent_service)
+    # Сервис для работы со статусами рекомендаций
+    status_recommendation_service = StatusRecommendationService()
 
     # Запуск REST-контроллера в фоне
-    RestController(config.web_port, config.secret_key, user_service, advent_service, admins_service, statistics_service).run_background()
+    RestController(config.web_port, config.secret_key, user_service, advent_service, admins_service, statistics_service,
+                   status_recommendation_service).run_background()
     # Запуск telegram бота
     TelegramBot(config.bot_token, config.bot_name, user_service, advent_service).run()
 

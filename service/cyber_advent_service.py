@@ -57,6 +57,14 @@ class CyberAdventService:
             return db_recommendation_to_model(db_rec)
         return None
 
+    async def delete_recommendation(self, rec_model: RecommendationModel):
+        db_sess = db_session.create_session()
+        db_rec = db_sess.query(Recommendation).filter(Recommendation.id == rec_model.num).first()
+        db_sess.delete(db_rec)
+        db_sess.commit()
+        db_sess.close()
+        return None
+
 
     # Количество отправленных рекомендаций пользователю
     async def sent_recommendation_count(self, user_id: int) -> int:

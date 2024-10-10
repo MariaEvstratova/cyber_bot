@@ -12,3 +12,4 @@ class Recommendation(SqlAlchemyBase, UserMixin, SerializerMixin):
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     recommendation = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    media = sqlalchemy.Column(sqlalchemy.String, nullable=True)

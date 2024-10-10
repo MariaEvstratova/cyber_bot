@@ -192,7 +192,7 @@ class RestController:
                 return redirect('/')
             return render_template('register.html', title='Регистрация', form=form)
 
-        @self.web.route("/api/v1/users", methods=['GET'])
+        @self.web.route("/api/private/users", methods=['GET'])
         def get_users():
             """Получение списка пользователей
                 Данное API возвращает список пользователей, использующих CyberBot
@@ -227,7 +227,7 @@ class RestController:
             users = self.user_service.get_users(page_num, page_size)
             return json.dumps([user.to_dict() for user in users], ensure_ascii=False)
 
-        @self.web.route("/api/v1/users/<user_id>", methods=['GET'])
+        @self.web.route("/api/private/users/<user_id>", methods=['GET'])
         async def get_user(user_id: int):
             """Получение пользователя по идентификатору
                 Данное API возвращает пользователя по идентификатору, использующего CyberBot
@@ -260,14 +260,14 @@ class RestController:
             else:
                 return not_found(f"Пользователь с ID {user_id} не найден")
 
-        @self.web.route("/api/v1/users/<user_id>/recommendations", methods=['GET'])
+        @self.web.route("/api/public/users/<user_id>/recommendations", methods=['GET'])
         async def get_user_recommendations(user_id):
             page_num = int(request.args.get("page_num", 0))
             page_size = int(request.args.get("page_size", 50))
             recommendations = await self.advent_service.get_recommendation_page(user_id, page_num, page_size)
             return json.dumps([rec.to_dict() for rec in recommendations], ensure_ascii=False)
 
-        @self.web.route("/api/v1/advice/random", methods=['GET'])
+        @self.web.route("/api/public/advice/random", methods=['GET'])
         async def get_user_recommendation_random():
             """Возвращает случайную рекомендацию
                 Возвращает случайную рекомендацию по безопасному поведению в интернете
@@ -295,7 +295,7 @@ class RestController:
             else:
                 return internal_error("Не удалось получить рекомендацию")
 
-        @self.web.route("/api/v1/advice/today", methods=['GET'])
+        @self.web.route("/api/public/advice/today", methods=['GET'])
         async def get_user_recommendation_today():
             """Возвращает рекомендацию дня
                 Возвращает рекомендацию дня по безопасному поведению в интернете

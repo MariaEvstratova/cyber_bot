@@ -225,7 +225,7 @@ class CyberAdventService:
 
 
     # Получение всех существующих рекомендаций
-    def get_all_recommendations(self) :
+    def get_all_recommendations(self) -> list[RecommendationModel]:
         db_sess = db_session.create_session()
         db_recs = db_sess.query(Recommendation).all()
         db_sess.close()

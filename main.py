@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class Config:
     def __init__(self):
         self.web_port = int(os.environ.get("PORT", 5000))
+        self.secret_key = os.environ.get("SECRET_KEY", "changeit")
         self.bot_token = os.environ.get('API_BOT_TOKEN', '6522784356:AAHB7lKSBukJDq-Tq3SAB9mxql95Cn9Dutg')
         self.bot_name = os.environ.get('BOT_NAME', 'Cyber_safeness_bot')
         self.database_url = os.environ.get('DB_URL')
@@ -37,7 +38,7 @@ def main():
     admins_service = AdminsService()
 
     # Запуск REST-контроллера в фоне
-    RestController(config.web_port, user_service, advent_service, admins_service).run_background()
+    RestController(config.web_port, config.secret_key, user_service, advent_service, admins_service).run_background()
     # Запуск telegram бота
     TelegramBot(config.bot_token, config.bot_name, user_service, advent_service).run()
 

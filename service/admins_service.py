@@ -15,7 +15,7 @@ class AdminsService:
         admin = Admins()
         admin.name = admins_model.name
         admin.email = admins_model.email
-        admin.hashed_password = admins_model.hashed_password
+        admin.hashed_password = self.hash_password(admins_model.password)
 
         db_sess = db_session.create_session()
         db_sess.add(admin)
@@ -42,7 +42,6 @@ class AdminsService:
             return db_admin_to_model(db_admin)
         return None
 
-    #Зашифровать пароль
-    def set_password(self, password: str):
-        hashed_password = generate_password_hash(password)
-        return hashed_password
+    # Зашифровать пароль
+    def hash_password(self, password: str) -> str:
+        return generate_password_hash(password)

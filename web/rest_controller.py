@@ -8,6 +8,7 @@ from flasgger import Swagger
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
 from flask_login import LoginManager
 
+from model.admins import AdminsModel
 from service.cyber_advent_service import CyberAdventService
 from service.user_service import UserService
 from service.admins_service import AdminsService
@@ -18,13 +19,14 @@ login_manager = LoginManager()
 
 class RestController:
 
-    def __init__(self, port, user_service: UserService, advent_service: CyberAdventService, admins_service: AdminsService):
+    def __init__(self, port, secret_key, user_service: UserService, advent_service: CyberAdventService, admins_service: AdminsService):
         self.port = port
         self.user_service = user_service
         self.advent_service = advent_service
         self.admins_service = admins_service
         self.web = Flask(__name__)
         self.web.config['JSON_AS_ASCII'] = False
+        self.web.config['SECRET_KEY'] = secret_key
         self.setup_swagger()
         self.setup_routes()
         login_manager.init_app(self.web)
@@ -122,8 +124,8 @@ class RestController:
                     return render_template('register.html', title='Регистрация',
                                            form=form,
                                            message="Такой пользователь уже есть")
-                hashed_password = self.admins_service.set_password(form.password.data)
-                self.admins_service.create_admin(name=form.name.data, email=form.email.data, password=hashed_password)
+                new_admin = AdminsModel(name=form.name.data, email=form.email.data, password=form.password.data)
+                self.admins_service.create_admin(new_admin)
                 return redirect('/')
             return render_template('register.html', title='Регистрация', form=form)
 

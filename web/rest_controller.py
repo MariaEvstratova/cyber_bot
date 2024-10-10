@@ -393,18 +393,26 @@ class RestController:
 
         app = Flask(__name__)
 
-        @app.route('/users/<int:user_id>', methods=['PUT'])
+        @app.route("/api/private/users", methods=['PUT'])
         def update_user(user_id):
             # Получаем обновлённые данные из тела запроса (обычно в формате JSON)
             updated_data = request.get_json()
             # Получаем данные пользователя по идентификатору (реализация зависит от базы данных)
             user = UserService.find_user_by_id(user_id)
             # Обновляем данные пользователя с помощью информации из обновлённых данных
-            user.name = updated_data.get('name')  # Пример: обновление имени, если оно присутствует в запросе
-            user.email = updated_data.get('email')  # Пример: обновление электронной почты, если она присутствует в запросе
+            user.name = updated_data.get('name')  # обновление имени, если оно присутствует в запросе
+            user.registration_day = updated_data.get('registration_day')
+            user.age_group = updated_data.get('age_group')
+            user.sex = updated_data.get('sex')
+            user.telegram_username = updated_data.get('telegram_username')
+            user.time = updated_data.get('time')
+            user.timezone = updated_data.get('timezone')
+            user.period = updated_data.get('period')
+            user.advent_start = updated_data.get('advent_start')
+
+            # Пример: обновление электронной почты, если она присутствует в запросе
             # Сохраняем обновлённые данные пользователя в базу данных (реализация варьируется)
-            save_user(user)
-            return f"User {user_id} successfully updated!", 200  # Возвращение сообщения о успешной обработке и статуса
+            return update_user(user)
 
 
         def not_found(message):

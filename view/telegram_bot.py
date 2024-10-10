@@ -433,7 +433,7 @@ class TelegramBot:
         user.Time = context.user_data.get('time', user.time)
         user.Period = context.user_data.get('period', user.period)
 
-        self.user_service.update_user(user)
+        self.user_service.update_user(user.user_id, user)
 
         reply_keyboard = [['Показать профиль', 'Меню']]
         markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)

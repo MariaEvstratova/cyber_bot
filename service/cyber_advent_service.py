@@ -20,6 +20,7 @@ class CyberAdventService:
 
         recommendation.Id = rec_model.num
         recommendation.Recommendation = recommendation.recommendation
+        recommendation.media = recommendation.media
         db_sess = db_session.create_session()
         db_sess.add(recommendation)
         db_sess.commit()

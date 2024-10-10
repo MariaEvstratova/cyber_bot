@@ -70,6 +70,10 @@ class RestController:
                 {
                     "name": "user",
                     "description": "Работа с пользователями бота по КиберГигиене"
+                },
+                {
+                    "name": "auth",
+                    "description": "Авторизация"
                 }
             ],
             "securityDefinitions": {
@@ -216,6 +220,32 @@ class RestController:
                 self.admins_service.create_admin(new_admin)
                 return redirect('/')
             return render_template('register.html', title='Регистрация', form=form)
+
+        @self.web.route('/login', methods=['POST'])
+        def login():
+            """Авторизация
+                Данное API возвращает JWT токен авторизованным пользователям
+                ---
+                tags:
+                  - auth
+                parameters:
+                  - name: email
+                    in: query
+                    type: string
+                    required: true
+                  - name: password
+                    in: query
+                    type: string
+                    required: true
+                responses:
+                  200:
+                    description: JWT-токен
+                    content:
+                      application/json:
+                        schema:
+                          type: string
+            """
+            return "token"
 
         @self.web.route('/rec', methods=['GET', 'POST'])
         # @self.login_required

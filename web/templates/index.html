@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+    {% if is_auth %}
     <h1>Рекомендации</h1>
+    {% else %}
+    <h1>Для просмотра списка рекомендаций - авторизуйтесь</h1>
+    {% endif %}
     <div>
         Авторы: команда - IT Developer, Новосибирск, 2024 г.
     </div>
     <br>
-    {#{% if current_user.is_authenticated %}#}
+    {% if is_auth %}
     <a href="/rec" class="btn btn-secondary">Добавить рекомендацию</a>
     <br><br>
     <h1>Список рекомендаций:</h1>
@@ -14,10 +19,9 @@
     {% for rec in recs %}
         <div class="col-md6 border rounded">
             <div style="font-size: 20px">
-                {{ rec.num }}.
-                {{ rec.text }}
+                {{ rec.num }}. {{ rec.text }}
             </div>
-            {#    {% if current_user.is_authenticated%}#}
+            {% if is_auth %}
             <div>
                 <a href="/rec/{{ rec.num }}" class="btn btn-warning">
                     Изменить
@@ -26,7 +30,7 @@
                     Удалить
                 </a>
             </div>
-            {#    {% endif %}#}
+            {% endif %}
         </div>
     {% endfor %}
     <br>
@@ -53,7 +57,7 @@
                     <div style="font-size: 20px">
                          Дата и время публикации - {{ stat["status_object"].registration_day }}
                     </div>
-                    {#    {% if current_user.is_authenticated%}#}
+                    {% if is_auth %}
                     <div>
                         <a href="/status/{{ stat["status_object"].id }}" class="btn btn-warning">
                             Изменить
@@ -62,10 +66,10 @@
                             Удалить
                         </a>
                     </div>
-                    {#    {% endif %}#}
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
     {% endfor %}
-    {#{% endif %}#}
+  {% endif %}
 {% endblock %}

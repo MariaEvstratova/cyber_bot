@@ -5,8 +5,8 @@ import datetime
 
 import jwt as jwt
 from flasgger import Swagger
-from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
-from flask_login import LoginManager, login_user, current_user, logout_user
+from flask import Flask, request, make_response, render_template, redirect
+from flask_login import LoginManager, login_user, logout_user
 
 from model.user import user_from_dict
 from model.admins import AdminsModel
@@ -214,7 +214,6 @@ class RestController:
                     sorted_statuses[user] = [i]
             return render_template("index.html", recs=all_recommendations,
                                    status_rec=sorted_statuses, statuses=['не опубликована', 'опубликована'], is_auth=check_authorization_bearer(request))
-)
 
 
         @self.web.route('/register', methods=['GET', 'POST'])
@@ -303,7 +302,6 @@ class RestController:
 
 
         @self.web.route('/rec', methods=['GET', 'POST'])
-        # @self.login_required
         def add_recs():
             form = RecsForm()
             if form.validate_on_submit():
@@ -315,7 +313,6 @@ class RestController:
                                    form=form)
 
         @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
-        # @login_required
         async def edit_recs(id):
             form = RecsForm()
             if request.method == "GET":
@@ -348,7 +345,6 @@ class RestController:
                 return not_found_error(f"Рекомендация с ID {id} не найдена")
 
         @self.web.route('/status/<int:id>', methods=['GET', 'POST'])
-        # @login_required
         async def edit_status(id):
             form = StatusForm()
             if request.method == "GET":
@@ -361,7 +357,7 @@ class RestController:
                     form.time_posted.data = time
                     form.public.data = True
                 else:
-                    return not_found(f"Рекомендация с ID {id} не найдена")
+                    return not_found_error(f"Рекомендация с ID {id} не найдена")
             if form.validate_on_submit():
                 pass
                 # rec = await self.advent_service.get_recommendation_info_by_id(id)
@@ -370,7 +366,7 @@ class RestController:
                 #     self.advent_service.update_recommendation(recommendation)
                 #     return redirect('/')
                 # else:
-                #     return not_found(f"Рекомендация с ID {id} не найдена")
+                #     return not_found_error(f"Рекомендация с ID {id} не найдена")
             return render_template('status.html',
                                    title='Редактирование статуса рекомендации',
                                    form=form
@@ -602,7 +598,6 @@ class RestController:
             return json.dumps(new_user.to_dict(), ensure_ascii=False)
 
 
-        def bad_request(message):
         @self.web.route("/api/private/users/<user_id>", methods=['PUT'])
         async def update_user(user_id):
             """Обновление пользователя

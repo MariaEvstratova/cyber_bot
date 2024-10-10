@@ -26,4 +26,4 @@ class AdminsModel:
 
 
 def db_admin_to_model(db_admin: Admins) -> AdminsModel:
-    return AdminsModel(db_admin.id, db_admin.name, db_admin.email, db_admin.hashed_password, db_admin.is_active == 1)
+    return AdminsModel(db_admin.id, db_admin.name, db_admin.email, db_admin.hashed_password, True)

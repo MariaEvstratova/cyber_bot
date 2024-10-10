@@ -14,7 +14,6 @@ class AdminsService:
         admin.name = admins_model.name
         admin.email = admins_model.email
         admin.hashed_password = self.hash_password(admins_model.password)
-        admin.is_active = 1
 
         db_sess = db_session.create_session()
         db_sess.add(admin)

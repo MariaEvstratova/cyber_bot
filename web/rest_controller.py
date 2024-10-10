@@ -2,9 +2,10 @@ import json
 import threading
 import random
 import datetime
+import model.user
 import jwt as jwt
 from flasgger import Swagger
-
+import service.user_service
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
 from flask_login import LoginManager
 
@@ -387,6 +388,23 @@ class RestController:
                 telegram_id=user_data['telegram_username'])
             new_user = self.user_service.create_user(user_model)
             return json.dumps(new_user.to_dict(), ensure_ascii=False)
+
+        from flask import Flask, request
+
+        app = Flask(__name__)
+
+        @app.route('/users/<int:user_id>', methods=['PUT'])
+        def update_user(user_id):
+            # Получаем обновлённые данные из тела запроса (обычно в формате JSON)
+            updated_data = request.get_json()
+            # Получаем данные пользователя по идентификатору (реализация зависит от базы данных)
+            user = UserService.find_user_by_id(user_id)
+            # Обновляем данные пользователя с помощью информации из обновлённых данных
+            user.name = updated_data.get('name')  # Пример: обновление имени, если оно присутствует в запросе
+            user.email = updated_data.get('email')  # Пример: обновление электронной почты, если она присутствует в запросе
+            # Сохраняем обновлённые данные пользователя в базу данных (реализация варьируется)
+            save_user(user)
+            return f"User {user_id} successfully updated!", 200  # Возвращение сообщения о успешной обработке и статуса
 
 
         def not_found(message):

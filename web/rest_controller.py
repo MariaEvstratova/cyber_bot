@@ -195,12 +195,21 @@ class RestController:
         @self.web.route("/")
         async def index():
             all_recommendations = self.advent_service.get_all_recommendations()
-            all_statuses = await self.status_recommendation_service.get_text_of_all_statuses_recommendations()
+            all_statuses = await self.status_recommendation_service.get_all_statuses_recommendations()
             recs = await self.status_recommendation_service.get_text_of_all_statuses_recommendations()
             status_rec = []
             for i in range(len(all_statuses)):
                 status_rec.append({'status_object': all_statuses[i], 'text_recommendation': recs[i]})
-            return render_template("index.html", recs=all_recommendations, status_rec=status_rec)
+            sorted_statuses = {}
+            for i in status_rec:
+                user_id = i['status_object'].user_id
+                user = await self.user_service.find_user_by_id(user_id)
+                if user in sorted_statuses:
+                    sorted_statuses[user].append(i)
+                else:
+                    sorted_statuses[user] = [i]
+            return render_template("index.html", recs=all_recommendations,
+                                   status_rec=sorted_statuses, statuses=['не опубликована', 'опубликована'])
 
         # def create_jwt_token(user_id):
         #     payload = {

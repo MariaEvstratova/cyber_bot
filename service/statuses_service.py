@@ -23,8 +23,14 @@ class StatusRecommendationService:
         all_recs_statuses = []
         for stat in db_stats:
             id = stat.rec_id
-            rec = await CyberAdventService.get_recommendation_info_by_id(id)
+            advent_service = CyberAdventService()
+            rec = await advent_service.get_recommendation_info_by_id(id)
             all_recs_statuses.append(rec.text)
 
         return all_recs_statuses
 
+    async def get_all_statuses_recommendations(self):
+        db_sess = db_session.create_session()
+        db_stats = db_sess.query(Status_recommendation).all()
+        db_sess.close()
+        return db_stats

@@ -13,8 +13,8 @@
     <br>
     {% for rec in recs %}
         <div class="col-md6 border rounded">
-            <h2>{{ rec.num }}</h2>
             <div style="font-size: 20px">
+                {{ rec.num }}.
                 {{ rec.text }}
             </div>
             {#    {% if current_user.is_authenticated%}#}
@@ -28,32 +28,39 @@
             </div>
             {#    {% endif %}#}
         </div>
-        <br>
     {% endfor %}
 
     <h1>Список выданных рекомендаций:</h1>
     <br>
-    {% for stat in status_rec %}
-        <div class="col-md6 border rounded">
-            <h2>{{ stat["status_object"].user_id }}</h2>
-            <div style="font-size: 20px">
-                {{ stat["text_recommendation"] }}
-            </div>
-            <div style="font-size: 20px">
-                {{ stat["status_object"].rec_status }}
-            </div>
-            {#    {% if current_user.is_authenticated%}#}
-{#            <div>#}
-{#                <a href="/rec/{{ rec.num }}" class="btn btn-warning">#}
-{#                    Изменить#}
-{#                </a>#}
-{#                <a href="/rec_delete/{{ rec.num }}" class="btn btn-danger">#}
-{#                    Удалить#}
-{#                </a>#}
-{#            </div>#}
-            {#    {% endif %}#}
+    {% for user in status_rec %}
+        <h3>{{ user.name }}</h3>
+        <div>
+            {% for stat in status_rec[user] %}
+                <div class="col-md6 border rounded">
+                    <div style="font-size: 20px">
+                        {{ stat["status_object"].rec_id }}.
+                        {{ stat["text_recommendation"] }}
+                    </div>
+                    <div style="font-size: 20px">
+                        Статус публикации -
+                        {{ statuses[stat["status_object"].rec_status_public] }}
+                    </div>
+                    <div style="font-size: 20px">
+                         Дата и время публикации - {{ stat["status_object"].registration_day }}
+                    </div>
+                    {#    {% if current_user.is_authenticated%}#}
+                    <div>
+                        <a href="/" class="btn btn-warning">
+                            Изменить
+                        </a>
+                        <a href="/" class="btn btn-danger">
+                            Удалить
+                        </a>
+                    </div>
+                    {#    {% endif %}#}
+                </div>
+            {% endfor %}
         </div>
-        <br>
     {% endfor %}
     {#{% endif %}#}
 {% endblock %}

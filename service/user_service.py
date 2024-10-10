@@ -94,6 +94,15 @@ class UserService:
         db_sess.close()
         return result
 
+    def get_all_users(self) -> list[UserModel]:
+        db_sess = db_session.create_session()
+        db_users = db_sess.query(User).all()
+        result = list()
+        for user in db_users:
+            result.append(db_user_to_model(user))
+        db_sess.close()
+        return result
+
 
     # Получить количество пользователей
     def get_users_count(self) -> int:

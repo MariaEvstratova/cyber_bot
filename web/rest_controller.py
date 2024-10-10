@@ -377,16 +377,17 @@ class RestController:
                 return json.dumps(recommendation.to_dict(), ensure_ascii=False)
             else:
                 return internal_error("Не удалось получить рекомендацию")
-
+       #http://127.0.0.1:5000/api/private/users/%7B'name':%20'Pavel',%20'age_group':%20'18-25',%20'registration_day':%20'2024-06-09%2012:36:50.977615',%20'schedule':%20'%D0%95%D0%B6%D0%B5%D0%B4%D0%BD%D0%B5%D0%B2%D0%BD%D0%BE',%20'sex':%20'%D0%96%D0%B5%D0%BD%D1%81%D0%BA%D0%B8%D0%B9',%20'time':%20'23:42',%20'timezone':%20'Asia/Bangkok',%20'period':%20'1',%20'advent'%7D
         @self.web.route("/api/private/users", methods=['POST'])
         async def post_user():
             user_data = request.get_json()
             user_model = UserModel(
                 name=user_data['name'], age_group=user_data['age_group'],
-                registration_day=user_data['registration_day'], schedule=user_data['age_group'],
+                registration_day=user_data['registration_day'], schedule=user_data['schedule'],
                 sex=user_data['sex'], time=user_data['time'],
                 timezone=user_data['timezone'], period=user_data['period'],
-                advent_start=user_data['advent_start'])
+                advent_start=user_data['advent_start'], telegram_username=user_data['telegram_username'],
+                telegram_id=user_data['telegram_username'])
             new_user = self.user_service.create_user(user_model)
             return json.dumps(new_user.to_dict(), ensure_ascii=False)
 

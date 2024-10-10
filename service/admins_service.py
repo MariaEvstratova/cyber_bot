@@ -40,6 +40,13 @@ class AdminsService:
             return db_admin_to_model(db_admin)
         return None
 
+    # Верификация пользователя
+    def check_user_credentials(self, email: str, password: str) -> bool:
+        user = self.find_user_by_email(email)
+        if not user:
+            return False
+        return check_password_hash(user.password, password)
+
     # Зашифровать пароль
     def hash_password(self, password: str) -> str:
         return generate_password_hash(password)

@@ -10,26 +10,39 @@ from flask_login import LoginManager
 
 from model.admins import AdminsModel
 from service.cyber_advent_service import CyberAdventService
+from service.statistics_service import StatisticsService
 from service.user_service import UserService
 from service.admins_service import AdminsService
 
 from forms.admins import RegisterForm, LoginForm
+from web.statistics_api import StatisticsApi
 
 login_manager = LoginManager()
 
 class RestController:
 
-    def __init__(self, port, secret_key, user_service: UserService, advent_service: CyberAdventService, admins_service: AdminsService):
+    def __init__(self,
+                 port,
+                 secret_key,
+                 user_service: UserService,
+                 advent_service: CyberAdventService,
+                 admins_service: AdminsService,
+                 statistics_service: StatisticsService,
+                 ):
         self.port = port
         self.user_service = user_service
         self.advent_service = advent_service
         self.admins_service = admins_service
+        self.statistics_service = statistics_service
         self.web = Flask(__name__)
         self.web.config['JSON_AS_ASCII'] = False
         self.web.config['SECRET_KEY'] = secret_key
         self.setup_swagger()
         self.setup_routes()
         login_manager.init_app(self.web)
+
+        # Регистрируем дополнительное API для получения статистики
+        StatisticsApi(statistics_service).register_api(self.web)
 
     def setup_swagger(self):
         template = {

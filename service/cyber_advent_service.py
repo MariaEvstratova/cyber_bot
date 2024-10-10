@@ -43,6 +43,14 @@ class CyberAdventService:
         return sent_recommendations_count
 
 
+    # Количество отправленных рекомендаций в общем
+    async def sent_all_recommendation_count(self) -> int:
+        db_sess = db_session.create_session()
+        sent_recommendations_count = (db_sess.query(Status_recommendation).count())
+        db_sess.close()
+        return sent_recommendations_count
+
+
     # Все ли рекомендации отправлены пользователю
     async def is_all_recommendation_sent(self, user_id: int) -> bool:
         # Определяем количество рекомендаций, которые в принципе нужно было отправить
@@ -64,6 +72,21 @@ class CyberAdventService:
                                            )
         db_sess.close()
         return completed_recommendations_count >= recommendations_count
+
+
+
+    # Количество пользователей, выполнивших адвент
+    async def get_users_count_with_advent_completed(self) -> int:
+        # Определяем количество рекомендаций, которые в принципе нужно было отправить
+        recommendations_count = await self.get_recommendation_count()
+
+        db_sess = db_session.create_session()
+        completed_recommendations_count = (db_sess.query(Status_recommendation)
+                                           .filter(Status_recommendation.rec_id == recommendations_count)
+                                           .count()
+                                           )
+        db_sess.close()
+        return completed_recommendations_count
 
 
     # Получить статус отправленной ранее рекомендации пользователю по ID
@@ -222,6 +245,17 @@ class CyberAdventService:
         db_sess.close()
 
         return rec
+
+
+    # Получить список
+    def get_all_recommendations(self) -> list[RecommendationModel]:
+        db_sess = db_session.create_session()
+        db_recs = db_sess.query(Recommendation).all()
+        db_sess.close()
+        all_recs = []
+        for rec in db_recs:
+            all_recs.append(db_recommendation_to_model(rec))
+        return all_recs
 
 
     # Получение всех существующих рекомендаций

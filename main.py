@@ -3,11 +3,11 @@ import logging
 
 from data import db_session
 from service.cyber_advent_service import CyberAdventService
+from service.statistics_service import StatisticsService
 from service.user_service import UserService
 from service.admins_service import AdminsService
 from view.telegram_bot import TelegramBot
 from web.rest_controller import RestController
-
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -36,9 +36,11 @@ def main():
     advent_service.init_recommendations()
     # Сервис для работы с администраторами
     admins_service = AdminsService()
+    # Сервис для сбора статистики
+    statistics_service = StatisticsService(user_service, advent_service)
 
     # Запуск REST-контроллера в фоне
-    RestController(config.web_port, config.secret_key, user_service, advent_service, admins_service).run_background()
+    RestController(config.web_port, config.secret_key, user_service, advent_service, admins_service, statistics_service).run_background()
     # Запуск telegram бота
     TelegramBot(config.bot_token, config.bot_name, user_service, advent_service).run()
 

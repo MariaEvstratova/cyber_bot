@@ -85,6 +85,22 @@ class UserService:
         return result
 
 
+    # Получить количество пользователей
+    def get_users_count(self) -> int:
+        db_sess = db_session.create_session()
+        users_count = (db_sess.query(User).count())
+        db_sess.close()
+        return users_count
+
+
+    # Получить количество пользователей, запустивших адвент
+    def get_users_with_advent_count(self) -> int:
+        db_sess = db_session.create_session()
+        users_count = (db_sess.query(User).filter(User.Advent_Start != None).count())
+        db_sess.close()
+        return users_count
+
+
     # Получить пользователей по списку id
     async def get_users_by_ids(self, user_ids: list[int]) -> list[UserModel]:
         db_sess = db_session.create_session()

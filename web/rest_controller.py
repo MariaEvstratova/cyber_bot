@@ -303,6 +303,9 @@ class RestController:
 
         @self.web.route('/rec', methods=['GET', 'POST'])
         def add_recs():
+            if not check_authorization_bearer(request):
+                return render_template('auth_error.html', title='Ошибка авторизации')
+            
             form = RecsForm()
             if form.validate_on_submit():
                 number = len(self.advent_service.get_all_recommendations()) + 1
@@ -314,6 +317,9 @@ class RestController:
 
         @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
         async def edit_recs(id):
+            if not check_authorization_bearer(request):
+                return render_template('auth_error.html', title='Ошибка авторизации')
+
             form = RecsForm()
             if request.method == "GET":
                 rec = await self.advent_service.get_recommendation_info_by_id(id)
@@ -337,6 +343,9 @@ class RestController:
 
         @self.web.route('/rec_delete/<int:id>', methods=['GET', 'POST'])
         async def recs_delete(id):
+            if not check_authorization_bearer(request):
+                return render_template('auth_error.html', title='Ошибка авторизации')
+
             rec = await self.advent_service.get_recommendation_info_by_id(id)
             if rec:
                 await self.advent_service.delete_recommendation(rec)
@@ -346,6 +355,9 @@ class RestController:
 
         @self.web.route('/status/<int:id>', methods=['GET', 'POST'])
         async def edit_status(id):
+            if not check_authorization_bearer(request):
+                return render_template('auth_error.html', title='Ошибка авторизации')
+
             form = StatusForm()
             if request.method == "GET":
                 rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(id)

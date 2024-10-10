@@ -14,6 +14,7 @@ from service.admins_service import AdminsService
 
 from forms.admins import RegisterForm, LoginForm
 
+login_manager = LoginManager()
 
 class RestController:
 
@@ -26,12 +27,7 @@ class RestController:
         self.web.config['JSON_AS_ASCII'] = False
         self.setup_swagger()
         self.setup_routes()
-        self.login_manager = LoginManager()
-        self.login_manager.init_app(self.web)
-
-        @self.login_manager.user_loader
-        def load_user(user_id):
-            return self.admins_service.find_user_by_id(user_id)
+        login_manager.init_app(self.web)
 
     def setup_swagger(self):
         template = {
@@ -39,7 +35,20 @@ class RestController:
                 "title": "CyberBot API",
                 "description": "API для управления CyberBot",
                 "version": "1.0"
-            }
+            },
+            "securityDefinitions": {
+                "Bearer": {
+                    "type": "apiKey",
+                    "name": "Authorization",
+                    "in": "header",
+                    "description": "Авторизация с помощью Bearer JWT-токена. Укажите: Bearer {token}, где {token} - ваш токен."
+                }
+            },
+            "security": [
+                {
+                    "Bearer": []
+                }
+            ]
         }
         config = {
             "definitions": {
@@ -60,6 +69,13 @@ class RestController:
                         "telegram_id": {"type": "string", "description": "Telegram Id"},
                     },
                 },
+                "Recommendation": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Идентификатор рекомендации"},
+                        "description": {"type": "string", "description": "Описание рекомендации"},
+                    },
+                },
                 "Error": {
                     "type": "object",
                     "properties": {
@@ -71,6 +87,10 @@ class RestController:
         Swagger(self.web, config=config, template=template, merge=True)
 
     def setup_routes(self):
+        @login_manager.user_loader
+        def load_user(user_id):
+            return self.admins_service.find_user_by_id(user_id)
+
         @self.web.route("/health")
         def health():
             return '{"Up!"}'
@@ -114,6 +134,19 @@ class RestController:
                 ---
                 tags:
                   - Пользователи
+                parameters:
+                  - name: page_num
+                    in: query
+                    type: string
+                    required: false
+                    default: 0
+                    example: 0
+                  - name: page_size
+                    in: query
+                    type: string
+                    required: false
+                    default: 25
+                    example: 25
                 responses:
                   200:
                     description: Список пользователей
@@ -171,6 +204,25 @@ class RestController:
 
         @self.web.route("/api/public/advice/random", methods=['GET'])
         async def get_user_recommendation_random():
+            """Получение случайной рекомендации
+                Данное API возвращает случайную рекомендацию кибер-адвента
+                ---
+                tags:
+                  - Рекомендации (публичное API)
+                responses:
+                  200:
+                    description: Рекомендация
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/definitions/Recommendation'
+                  404:
+                    description: Рекомендация не найдена
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/definitions/Error'
+            """
             random_num = random.randint(1, 30)
             recommendation = await self.advent_service.get_recommendation_info_by_id(random_num)
             if recommendation:
@@ -180,6 +232,25 @@ class RestController:
 
         @self.web.route("/api/public/advice/today", methods=['GET'])
         async def get_user_recommendation_today():
+            """Получение сегодняшней рекомендации
+                Данное API возвращает рекомендацию кибер-адвента в соответствии с номером сегодняшнего дня в месяце
+                ---
+                tags:
+                  - Рекомендации (публичное API)
+                responses:
+                  200:
+                    description: Рекомендация
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/definitions/Recommendation'
+                  404:
+                    description: Рекомендация не найдена
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/definitions/Error'
+            """
             today_day = datetime.datetime.now().day
             recommendations_count = await self.advent_service.get_recommendation_count()
             if today_day > recommendations_count:

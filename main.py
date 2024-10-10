@@ -33,7 +33,7 @@ def main():
     advent_service = CyberAdventService()
     # Инициализируем сервис
     advent_service.init_recommendations()
-    # Сервис для работы с админами
+    # Сервис для работы с администраторами
     admins_service = AdminsService()
 
     # Запуск REST-контроллера в фоне

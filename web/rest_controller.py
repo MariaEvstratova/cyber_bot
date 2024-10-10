@@ -209,7 +209,7 @@ class RestController:
 
         @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
         # @login_required
-        def edit_news(id):
+        async def edit_news(id):
             form = RecsForm()
             if request.method == "GET":
                 rec = await self.advent_service.get_recommendation_info_by_id(id)

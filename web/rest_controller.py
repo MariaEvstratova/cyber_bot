@@ -179,7 +179,7 @@ class RestController:
                 return redirect('/')
             return render_template('register.html', title='Регистрация', form=form)
 
-        @self.web.route("/api/v1/users", methods=['GET'])
+        @self.web.route("/api/private/users", methods=['GET'])
         def get_users():
             """Получение списка пользователей
                 Данное API возвращает список пользователей, использующих CyberBot
@@ -214,7 +214,7 @@ class RestController:
             users = self.user_service.get_users(page_num, page_size)
             return json.dumps([user.to_dict() for user in users], ensure_ascii=False)
 
-        @self.web.route("/api/v1/users/<user_id>", methods=['GET'])
+        @self.web.route("/api/private/users/<user_id>", methods=['GET'])
         async def get_user(user_id: int):
             """Получение пользователя по идентификатору
                 Данное API возвращает пользователя по идентификатору, использующего CyberBot

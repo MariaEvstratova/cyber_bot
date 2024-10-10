@@ -39,6 +39,18 @@ class CyberAdventService:
     #
     #     return recommendation_model
 
+    def create_recommendation(self, rec_model: RecommendationModel) -> RecommendationModel:
+        recommendation = Recommendation()
+        recommendation.Id = rec_model.num
+        recommendation.Recommendation = recommendation.recommendation
+
+        db_sess = db_session.create_session()
+        db_sess.add(recommendation)
+        db_sess.commit()
+        db_sess.close()
+
+        return rec_model
+
     # Количество рекомендаций в адвенте
     async def get_recommendation_count(self) -> int:
         db_sess = db_session.create_session()

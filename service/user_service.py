@@ -24,28 +24,38 @@ class UserService:
         db_sess = db_session.create_session()
         db_sess.add(user)
         db_sess.commit()
+        user_model.user_id = user.User_ID
         db_sess.close()
 
         return user_model
 
 
     # Обновление пользователя
-    def update_user(self, user_model: UserModel) -> UserModel:
-        user = User()
-        user.User_ID = user_model.user_id
-        user.Name = user_model.name
-        user.Age_Group = user_model.age_group
-        user.Schedule = user_model.schedule
-        user.Sex = user_model.sex
-        user.UserName = user_model.telegram_username
-        user.Chat_Id = user_model.telegram_id
-        user.Time = user_model.time
-        user.Timezone = user_model.timezone
-        user.Period = user_model.period
-
+    def update_user(self, user_id: int, user_model: UserModel) -> UserModel:
         db_sess = db_session.create_session()
-        db_sess.add(user)
+        db_user = db_sess.query(User).filter(User.User_ID == user_id).first()
+        if user_model.name:
+            db_user.Name = user_model.name
+        if user_model.age_group:
+            db_user.Age_Group = user_model.age_group
+        if user_model.schedule:
+            db_user.Schedule = user_model.schedule
+        if user_model.sex:
+            db_user.Sex = user_model.sex
+        if user_model.telegram_username:
+            db_user.UserName = user_model.telegram_username
+        if user_model.telegram_id:
+            db_user.Chat_Id = user_model.telegram_id
+        if user_model.time:
+            db_user.Time = user_model.time
+        if user_model.timezone:
+            db_user.Timezone = user_model.timezone
+        if user_model.period:
+            db_user.Period = user_model.period
+
+        db_sess.add(db_user)
         db_sess.commit()
+        user_model = db_user_to_model(db_user)
         db_sess.close()
 
         return user_model

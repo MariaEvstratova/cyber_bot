@@ -9,7 +9,7 @@ import service.user_service
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
 from flask_login import LoginManager
 
-from model.user import UserModel
+from model.user import UserModel, user_from_dict
 from model.admins import AdminsModel
 from model.recommendation import RecommendationModel
 from service.cyber_advent_service import CyberAdventService
@@ -111,6 +111,20 @@ class RestController:
                             "telegram_username": {"type": "string", "description": "Telegram Username"},
                             "telegram_id": {"type": "string", "description": "Telegram Id"},
                         },
+                        "example": """
+                    {
+                        "name": "Иван Петров",
+                        "registration_day": "2024-10-10T10:30:00",
+                        "age_group": "18-25",
+                        "schedule": "Ежедневно",
+                        "sex": "Мужской",
+                        "telegram_username": "test_user",
+                        "telegram_id": "123456780",
+                        "time": "10:00",
+                        "timezone": "Asia/Novosibirsk",
+                        "period": "2",
+                        "advent_start": null
+                    }"""
                     },
                     "Advice": {
                         "type": "object",
@@ -142,6 +156,13 @@ class RestController:
                         "type": "object",
                         "properties": {
                             "error": {"type": "string", "title": "Краткое описание ошибки", "example": "Запрошенный ресурс не найден." },
+                        },
+                    },
+                    "ErrorBadRequest": {
+                        "type": "object",
+                        "properties": {
+                            "error": {"type": "string", "title": "Краткое описание ошибки",
+                                      "example": "Переданы неверные данные."},
                         },
                     },
                     "ErrorResponse": {
@@ -241,80 +262,6 @@ class RestController:
             else:
                 return not_found(f"Рекомендация с ID {id} не найдена")
 
-        @self.web.route("/api/private/users", methods=['GET'])
-        def get_users():
-            """Получение списка пользователей
-                Данное API возвращает список пользователей, использующих CyberBot
-                ---
-                tags:
-                  - user
-                parameters:
-                  - name: page_num
-                    in: query
-                    type: string
-                    required: false
-                    default: 0
-                    example: 0
-                  - name: page_size
-                    in: query
-                    type: string
-                    required: false
-                    default: 25
-                    example: 25
-                responses:
-                  200:
-                    description: Список пользователей
-                    content:
-                      application/json:
-                        schema:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/User'
-            """
-            page_num = int(request.args.get("page_num", 0))
-            page_size = int(request.args.get("page_size", 25))
-            users = self.user_service.get_users(page_num, page_size)
-            return json.dumps([user.to_dict() for user in users], ensure_ascii=False)
-
-        @self.web.route("/api/private/users/<user_id>", methods=['GET'])
-        async def get_user(user_id: int):
-            """Получение пользователя по идентификатору
-                Данное API возвращает пользователя по идентификатору, использующего CyberBot
-                ---
-                tags:
-                  - user
-                parameters:
-                  - name: user_id
-                    in: path
-                    type: string
-                    required: true
-                    example: 1
-                responses:
-                  200:
-                    description: Пользователь
-                    content:
-                      application/json:
-                        schema:
-                          $ref: '#/components/schemas/User'
-                  404:
-                    description: Пользователь не найден
-                    content:
-                      application/json:
-                        schema:
-                          $ref: '#/components/schemas/ErrorNotFound'
-            """
-            user = await self.user_service.find_user_by_id(user_id)
-            if user:
-                return json.dumps(user.to_dict(), ensure_ascii=False)
-            else:
-                return not_found(f"Пользователь с ID {user_id} не найден")
-
-        @self.web.route("/api/public/users/<user_id>/recommendations", methods=['GET'])
-        async def get_user_recommendations(user_id):
-            page_num = int(request.args.get("page_num", 0))
-            page_size = int(request.args.get("page_size", 50))
-            recommendations = await self.advent_service.get_recommendation_page(user_id, page_num, page_size)
-            return json.dumps([rec.to_dict() for rec in recommendations], ensure_ascii=False)
 
         @self.web.route("/api/public/advice/random", methods=['GET'])
         async def get_user_recommendation_random():
@@ -375,50 +322,185 @@ class RestController:
                 return json.dumps(recommendation.to_dict(), ensure_ascii=False)
             else:
                 return internal_error("Не удалось получить рекомендацию")
-       # http://127.0.0.1:5000/api/private/users/%7B'name':%20'Pavel',%20'age_group':%20'18-25',%20'registration_day':%20'2024-06-09%2012:36:50.977615',%20'schedule':%20'%D0%95%D0%B6%D0%B5%D0%B4%D0%BD%D0%B5%D0%B2%D0%BD%D0%BE',%20'sex':%20'%D0%96%D0%B5%D0%BD%D1%81%D0%BA%D0%B8%D0%B9',%20'time':%20'23:42',%20'timezone':%20'Asia/Bangkok',%20'period':%20'1',%20'advent_start':%20'2024-06-09%2012:36:52.995041',%20'telegram_username':%20'masha',%20'telegram_id':%20'111111111'%7D
-        @self.web.route("/api/private/users", methods=['POST'])
-        async def post_user():
+
+        @self.web.route("/api/v1/private/users", methods=['GET'])
+        def get_users():
+            """Получение списка пользователей
+                Данное API возвращает список пользователей, использующих CyberBot
+                ---
+                tags:
+                  - user
+                parameters:
+                  - name: page_num
+                    in: query
+                    type: string
+                    required: false
+                    default: 0
+                    example: 0
+                  - name: page_size
+                    in: query
+                    type: string
+                    required: false
+                    default: 25
+                    example: 25
+                responses:
+                  200:
+                    description: Список пользователей
+                    content:
+                      application/json:
+                        schema:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/User'
+            """
+            page_num = int(request.args.get("page_num", 0))
+            page_size = int(request.args.get("page_size", 25))
+            users = self.user_service.get_users(page_num, page_size)
+            return json.dumps([user.to_dict() for user in users], ensure_ascii=False)
+
+        @self.web.route("/api/v1/private/users/<user_id>", methods=['GET'])
+        async def get_user(user_id: int):
+            """Получение пользователя по идентификатору
+                Данное API возвращает пользователя по идентификатору, использующего CyberBot
+                ---
+                tags:
+                  - user
+                parameters:
+                  - name: user_id
+                    in: path
+                    type: string
+                    required: true
+                    example: 1
+                responses:
+                  200:
+                    description: Пользователь
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/User'
+                  404:
+                    description: Пользователь не найден
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorNotFound'
+            """
+            user = await self.user_service.find_user_by_id(user_id)
+            if user:
+                return json.dumps(user.to_dict(), ensure_ascii=False)
+            else:
+                return not_found(f"Пользователь с ID {user_id} не найден")
+
+
+        @self.web.route("/api/v1/private/users", methods=['POST'])
+        async def create_user():
+            """Добавление пользователя
+                Добавить нового пользователя в чат-бот
+                ---
+                tags:
+                  - user
+                requestBody:
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+                  required: true
+                responses:
+                  200:
+                    description: Пользователь
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/User'
+                  400:
+                    description: Переданы неверные данные
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorBadRequest'
+            """
             user_data = request.get_json()
-            user_model = UserModel(
-                name=user_data['name'], age_group=user_data['age_group'],
-                registration_day=user_data['registration_day'], schedule=user_data['schedule'],
-                sex=user_data['sex'], time=user_data['time'],
-                timezone=user_data['timezone'], period=user_data['period'],
-                advent_start=user_data['advent_start'], telegram_username=user_data['telegram_username'],
-                telegram_id=user_data['telegram_username'])
+            if not user_data:
+                return bad_request("Не передано содержимое с пользовательскими данными")
+
+            user_model = user_from_dict(user_data)
+            if not user_model.name:
+                return bad_request("Не передано имя пользователя")
+
             new_user = self.user_service.create_user(user_model)
             return json.dumps(new_user.to_dict(), ensure_ascii=False)
 
-        from flask import Flask, request
 
-        app = Flask(__name__)
+        @self.web.route("/api/private/users/<user_id>", methods=['PUT'])
+        async def update_user(user_id):
+            """Обновление пользователя
+                Обновить пользователя в чат-боте по ID
+                ---
+                tags:
+                  - user
+                parameters:
+                  - name: user_id
+                    in: path
+                    type: string
+                    required: true
+                    example: 1
+                requestBody:
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+                  required: true
+                responses:
+                  200:
+                    description: Пользователь
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/User'
+                  400:
+                    description: Переданы неверные данные
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorBadRequest'
+                  404:
+                    description: Пользователь не найден
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorNotFound'
+            """
+            # Ищем пользователя по идентификатору
+            user = await self.user_service.find_user_by_id(user_id)
+            if not user:
+                return not_found(f"Пользователь с ID {user_id} не найден")
 
-        @app.route("/api/private/users", methods=['PUT'])
-        def update_user(user_id):
-            # Получаем обновлённые данные из тела запроса (обычно в формате JSON)
-            updated_data = request.get_json()
-            # Получаем данные пользователя по идентификатору (реализация зависит от базы данных)
-            user = UserService.find_user_by_id(user_id)
-            # Обновляем данные пользователя с помощью информации из обновлённых данных
-            user.name = updated_data.get('name')  # обновление имени, если оно присутствует в запросе
-            user.registration_day = updated_data.get('registration_day')
-            user.age_group = updated_data.get('age_group')
-            user.sex = updated_data.get('sex')
-            user.telegram_username = updated_data.get('telegram_username')
-            user.time = updated_data.get('time')
-            user.timezone = updated_data.get('timezone')
-            user.period = updated_data.get('period')
-            user.advent_start = updated_data.get('advent_start')
+            user_data = request.get_json()
+            if not user_data:
+                return bad_request("Не передано содержимое с пользовательскими данными")
+            user_model = user_from_dict(user_data)
+            updated_user = self.user_service.update_user(user_id, user_model)
+            return json.dumps(updated_user.to_dict(), ensure_ascii=False)
 
-            # Пример: обновление электронной почты, если она присутствует в запросе
-            # Сохраняем обновлённые данные пользователя в базу данных (реализация варьируется)
-            return update_user(user)
+
+        @self.web.route("/api/v1/private/users/<user_id>/recommendations", methods=['GET'])
+        async def get_user_recommendations(user_id):
+            page_num = int(request.args.get("page_num", 0))
+            page_size = int(request.args.get("page_size", 50))
+            recommendations = await self.advent_service.get_recommendation_page(user_id, page_num, page_size)
+            return json.dumps([rec.to_dict() for rec in recommendations], ensure_ascii=False)
 
 
         def not_found(message):
             error = { 'error' : message }
             response = make_response(json.dumps(error, ensure_ascii=False))
             response.status_code = 404
+            return response
+
+        def bad_request(message):
+            error = { 'error' : message }
+            response = make_response(json.dumps(error, ensure_ascii=False))
+            response.status_code = 400
             return response
 
         def internal_error(message):

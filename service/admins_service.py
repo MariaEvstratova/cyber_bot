@@ -1,7 +1,5 @@
 from typing import Optional
 
-from sqlalchemy import func, join
-
 from data import db_session
 from data.admins import Admins
 from model.admins import AdminsModel, db_admin_to_model
@@ -10,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 class AdminsService:
 
-    # Добавление админа
+    # Добавление администратора
     def create_admin(self, admins_model: AdminsModel) -> AdminsModel:
         admin = Admins()
         admin.name = admins_model.name
@@ -24,7 +22,7 @@ class AdminsService:
 
         return admins_model
 
-    # Получить пользователя по id
+    # Получить администратора по id
     def find_user_by_id(self, user_id: int) -> Optional[AdminsModel]:
         db_sess = db_session.create_session()
         db_admin = db_sess.query(Admins).filter(Admins.id == user_id).first()
@@ -33,7 +31,7 @@ class AdminsService:
             return db_admin_to_model(db_admin)
         return None
 
-    # Получить пользователя по email
+    # Получить администратора по email
     def find_user_by_email(self, email: str) -> Optional[AdminsModel]:
         db_sess = db_session.create_session()
         db_admin = db_sess.query(Admins).filter(Admins.email == email).first()

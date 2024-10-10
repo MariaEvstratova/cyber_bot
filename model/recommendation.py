@@ -1,7 +1,6 @@
 from data.recommendations import Recommendation
 
 
-
 class RecommendationModel:
     def __init__(self, num: str, text: str):
         self.num = num

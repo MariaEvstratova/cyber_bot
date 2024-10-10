@@ -2,14 +2,13 @@ import json
 import threading
 import random
 import datetime
-import model.user
+
 import jwt as jwt
 from flasgger import Swagger
-import service.user_service
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
-from flask_login import LoginManager
+from flask_login import LoginManager, login_user, current_user, logout_user
 
-from model.user import UserModel, user_from_dict
+from model.user import user_from_dict
 from model.admins import AdminsModel
 from model.recommendation import RecommendationModel
 from service.cyber_advent_service import CyberAdventService
@@ -79,19 +78,6 @@ class RestController:
                     "name": "auth",
                     "description": "Авторизация"
                 }
-            ],
-            "securityDefinitions": {
-                "Bearer": {
-                    "type": "apiKey",
-                    "name": "Authorization",
-                    "in": "header",
-                    "description": "Авторизация с помощью Bearer JWT-токена. Укажите: Bearer {token}, где {token} - ваш токен."
-                }
-            },
-            "security": [
-                {
-                    "Bearer": []
-                }
             ]
         }
         config = {
@@ -102,6 +88,16 @@ class RestController:
                 }
             ],
             "components": {
+                'securitySchemes': {
+                    'bearerAuth': {
+                        'type': 'http',
+                        'scheme': 'bearer',
+                        'bearerFormat': 'JWT'
+                    }
+                },
+                'security': {
+                    'bearerAuth': []
+                },
                 "schemas": {
                     "User": {
                         "type": "object",
@@ -173,6 +169,13 @@ class RestController:
                                       "example": "Переданы неверные данные."},
                         },
                     },
+                    "ErrorUnauthorize": {
+                        "type": "object",
+                        "properties": {
+                            "error": {"type": "string", "title": "Краткое описание ошибки",
+                                      "example": "Отсутствует доступ."},
+                        },
+                    },
                     "ErrorResponse": {
                         "type": "object",
                         "properties": {
@@ -210,16 +213,9 @@ class RestController:
                 else:
                     sorted_statuses[user] = [i]
             return render_template("index.html", recs=all_recommendations,
-                                   status_rec=sorted_statuses, statuses=['не опубликована', 'опубликована'])
+                                   status_rec=sorted_statuses, statuses=['не опубликована', 'опубликована'], is_auth=check_authorization_bearer(request))
+)
 
-        # def create_jwt_token(user_id):
-        #     payload = {
-        #         'sub': user_id,
-        #         'iat': datetime.utcnow(),
-        #         'exp': datetime.utcnow()
-        #     }
-        #     token = jwt.encode(payload, self.web.config['JSON_AS_ASCII'], algorithm='HS256')
-        #     return token
 
         @self.web.route('/register', methods=['GET', 'POST'])
         def register():
@@ -235,12 +231,43 @@ class RestController:
                                            form=form,
                                            message="Такой пользователь уже есть")
                 new_admin = AdminsModel(name=form.name.data, email=form.email.data, password=form.password.data)
-                self.admins_service.create_admin(new_admin)
-                return redirect('/')
+                created_admin = self.admins_service.create_admin(new_admin)
+                login_user(created_admin)
+                token = encode_auth_token(created_admin.id)
+                response = make_response(redirect('/'))
+                response.set_cookie("x-auth-token", token)
+                return response
             return render_template('register.html', title='Регистрация', form=form)
 
-        @self.web.route('/login', methods=['POST'])
+        @self.web.route('/login', methods=['GET', 'POST'])
         def login():
+            form = LoginForm()
+            if form.validate_on_submit():
+                admin = self.admins_service.find_user_by_email(form.email.data)
+                if not admin:
+                    return render_template('login.html', title='Авторизация',
+                                           form=form,
+                                           message="Пользователь не найден")
+                if not self.admins_service.check_user_credentials(form.email.data, form.password.data):
+                    return render_template('login.html', title='Авторизация',
+                                           form=form,
+                                           message="Неверно введен email или пароль")
+                login_user(admin)
+                token = encode_auth_token(admin.id)
+                response = make_response(redirect('/'))
+                response.set_cookie("x-auth-token", token)
+                return response
+            return render_template('login.html', title='Авторизация', form=form)
+
+        @self.web.route('/logout', methods=['GET'])
+        def logout():
+            logout_user()
+            response = make_response(redirect('/'))
+            response.set_cookie("x-auth-token", "")
+            return response
+
+        @self.web.route('/auth', methods=['POST'])
+        def auth():
             """Авторизация
                 Данное API возвращает JWT токен авторизованным пользователям
                 ---
@@ -263,7 +290,17 @@ class RestController:
                         schema:
                           type: string
             """
-            return "token"
+            email = request.args.get("email", None)
+            password = request.args.get("password", None)
+            if not email or not password:
+                return unauthorize_error("Не передан email или пароль")
+            admin = self.admins_service.find_user_by_email(email)
+            if not admin:
+                return unauthorize_error("Пользователь не является администратором")
+            if not self.admins_service.check_user_credentials(email, password):
+                return unauthorize_error("Неверный email или пароль")
+            return encode_auth_token(admin.id)
+
 
         @self.web.route('/rec', methods=['GET', 'POST'])
         # @self.login_required
@@ -287,7 +324,7 @@ class RestController:
                     form.recommendation.data = rec.text
                     form.media.data = rec.media
                 else:
-                    return not_found(f"Рекомендация с ID {id} не найдена")
+                    return not_found_error(f"Рекомендация с ID {id} не найдена")
             if form.validate_on_submit():
                 rec = await self.advent_service.get_recommendation_info_by_id(id)
                 if rec:
@@ -295,7 +332,7 @@ class RestController:
                     self.advent_service.update_recommendation(recommendation)
                     return redirect('/')
                 else:
-                    return not_found(f"Рекомендация с ID {id} не найдена")
+                    return not_found_error(f"Рекомендация с ID {id} не найдена")
             return render_template('rec.html',
                                    title='Редактирование рекомендации',
                                    form=form
@@ -308,7 +345,7 @@ class RestController:
                 await self.advent_service.delete_recommendation(rec)
                 return redirect('/')
             else:
-                return not_found(f"Рекомендация с ID {id} не найдена")
+                return not_found_error(f"Рекомендация с ID {id} не найдена")
 
         @self.web.route('/status/<int:id>', methods=['GET', 'POST'])
         # @login_required
@@ -420,6 +457,8 @@ class RestController:
                     required: false
                     default: 25
                     example: 25
+                security:
+                  - bearerAuth: ['Authorization']
                 responses:
                   200:
                     description: Список пользователей
@@ -429,7 +468,24 @@ class RestController:
                           type: array
                           items:
                             $ref: '#/components/schemas/User'
+                  403:
+                    description: Отсутствует доступ
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorUnauthorize'
+                  500:
+                    description: Внутренняя ошибка сервера
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorResponse'
             """
+            try:
+                check_authorization_header(request)
+            except Exception as e:
+                 return unauthorize_error(f"Отказано в доступe: {str(e)}")
+
             page_num = int(request.args.get("page_num", 0))
             page_size = int(request.args.get("page_size", 25))
             users = self.user_service.get_users(page_num, page_size)
@@ -448,6 +504,8 @@ class RestController:
                     type: string
                     required: true
                     example: 1
+                security:
+                  - bearerAuth: ['Authorization']
                 responses:
                   200:
                     description: Пользователь
@@ -455,18 +513,35 @@ class RestController:
                       application/json:
                         schema:
                           $ref: '#/components/schemas/User'
+                  403:
+                    description: Отсутствует доступ
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorUnauthorize'
                   404:
                     description: Пользователь не найден
                     content:
                       application/json:
                         schema:
                           $ref: '#/components/schemas/ErrorNotFound'
+                  500:
+                    description: Внутренняя ошибка сервера
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorResponse'
             """
+            try:
+                check_authorization_header(request)
+            except Exception as e:
+                 return unauthorize_error(f"Отказано в доступe: {str(e)}")
+
             user = await self.user_service.find_user_by_id(user_id)
             if user:
                 return json.dumps(user.to_dict(), ensure_ascii=False)
             else:
-                return not_found(f"Пользователь с ID {user_id} не найден")
+                return not_found_error(f"Пользователь с ID {user_id} не найден")
 
 
         @self.web.route("/api/v1/private/users", methods=['POST'])
@@ -482,6 +557,8 @@ class RestController:
                       schema:
                         $ref: '#/components/schemas/User'
                   required: true
+                security:
+                  - bearerAuth: ['Authorization']
                 responses:
                   200:
                     description: Пользователь
@@ -495,28 +572,166 @@ class RestController:
                       application/json:
                         schema:
                           $ref: '#/components/schemas/ErrorBadRequest'
+                  403:
+                    description: Отсутствует доступ
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorUnauthorize'
+                  500:
+                    description: Внутренняя ошибка сервера
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorResponse'
             """
+            try:
+                check_authorization_header(request)
+            except Exception as e:
+                 return unauthorize_error(f"Отказано в доступe: {str(e)}")
+
             user_data = request.get_json()
             if not user_data:
-                return bad_request("Не передано содержимое с пользовательскими данными")
+                return bad_request_error("Не передано содержимое с пользовательскими данными")
 
             user_model = user_from_dict(user_data)
             if not user_model.name:
-                return bad_request("Не передано имя пользователя")
+                return bad_request_error("Не передано имя пользователя")
 
             new_user = self.user_service.create_user(user_model)
             return json.dumps(new_user.to_dict(), ensure_ascii=False)
 
-        def not_found(message):
-            error = { 'error' : message }
-            response = make_response(json.dumps(error, ensure_ascii=False))
-            response.status_code = 404
-            return response
 
         def bad_request(message):
+        @self.web.route("/api/private/users/<user_id>", methods=['PUT'])
+        async def update_user(user_id):
+            """Обновление пользователя
+                Обновить пользователя в чат-боте по ID
+                ---
+                tags:
+                  - user
+                parameters:
+                  - name: user_id
+                    in: path
+                    type: string
+                    required: true
+                    example: 1
+                requestBody:
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+                  required: true
+                security:
+                  - bearerAuth: ['Authorization']
+                responses:
+                  200:
+                    description: Пользователь
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/User'
+                  400:
+                    description: Переданы неверные данные
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorBadRequest'
+                  403:
+                    description: Отсутствует доступ
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorUnauthorize'
+                  404:
+                    description: Пользователь не найден
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorNotFound'
+                  500:
+                    description: Внутренняя ошибка сервера
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/ErrorResponse'
+            """
+            try:
+                check_authorization_header(request)
+            except Exception as e:
+                 return unauthorize_error(f"Отказано в доступe: {str(e)}")
+
+            user = await self.user_service.find_user_by_id(user_id)
+            if not user:
+                return not_found_error(f"Пользователь с ID {user_id} не найден")
+
+            user_data = request.get_json()
+            if not user_data:
+                return bad_request_error("Не передано содержимое с пользовательскими данными")
+            user_model = user_from_dict(user_data)
+            updated_user = self.user_service.update_user(user_id, user_model)
+            return json.dumps(updated_user.to_dict(), ensure_ascii=False)
+
+
+        def check_authorization_header(request):
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                raise Exception('Отсутствует заголовок Authorization')
+            auth_token = auth_header.split(" ")[1]
+            admin_id = decode_auth_token(auth_token)
+            if not admin_id:
+                raise Exception('В токене отсутствует информация о пользователе')
+            admin = self.admins_service.find_user_by_id(admin_id)
+            if admin:
+                return True
+            else:
+                raise Exception('Пользователь не является администратором')
+
+        def check_authorization_bearer(request) -> bool:
+            try:
+                auth_token = request.cookies.get("x-auth-token", None)
+                if not auth_token:
+                    return False
+                admin_id = decode_auth_token(auth_token)
+                if not admin_id:
+                    return False
+                admin = self.admins_service.find_user_by_id(admin_id)
+                if admin:
+                    return True
+                else:
+                    return False
+            except Exception:
+                return False
+
+        def encode_auth_token(user_id: int) -> str:
+            payload = {
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=5),
+                'iat': datetime.datetime.utcnow(),
+                'sub': user_id
+            }
+            token = jwt.encode(payload, self.web.config['SECRET_KEY'], algorithm='HS256')
+            return token
+
+        def decode_auth_token(auth_token: str) -> int:
+            payload = jwt.decode(auth_token, self.web.config.get('SECRET_KEY'), algorithms=['HS256'])
+            return payload['sub']
+
+        def bad_request_error(message):
             error = { 'error' : message }
             response = make_response(json.dumps(error, ensure_ascii=False))
             response.status_code = 400
+            return response
+
+        def unauthorize_error(message):
+            error = { 'error' : message }
+            response = make_response(json.dumps(error, ensure_ascii=False))
+            response.status_code = 403
+            return response
+
+        def not_found_error(message):
+            error = { 'error' : message }
+            response = make_response(json.dumps(error, ensure_ascii=False))
+            response.status_code = 404
             return response
 
         def internal_error(message):

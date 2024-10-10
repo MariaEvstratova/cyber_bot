@@ -13,14 +13,16 @@
 <header>
     <nav class="navbar navbar-light bg-light">
         <a class="navbar-brand" href="/">IT-CUBE NSK cyber bot</a>
-{#        {% if current_user.is_authenticated %}#}
-{#           {{ current_user.name }} <a class="navbar-brand" href="/logout">Выйти</a>#}
-{#        {% else %}#}
+{% if is_auth %}
+            <p>
+                {{ current_user.name }} <a class="navbar-brand" href="/logout">Выйти</a>
+            </p>
+{% else %}
             <p>
                 <a class="btn btn-primary " href="/register">Зарегистрироваться</a>
-                <a class="btn btn-success" href="/">Войти</a>
+                <a class="btn btn-success" href="/login">Войти</a>
             </p>
-{#        {% endif %}#}
+{% endif %}
     </nav>
 </header>
 <!-- Begin page content -->

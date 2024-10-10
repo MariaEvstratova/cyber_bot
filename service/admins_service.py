@@ -14,10 +14,13 @@ class AdminsService:
         admin.name = admins_model.name
         admin.email = admins_model.email
         admin.hashed_password = self.hash_password(admins_model.password)
+        admin.is_active = 1
 
         db_sess = db_session.create_session()
         db_sess.add(admin)
         db_sess.commit()
+        admins_model.id = admin.id
+        admins_model.is_active = True
         db_sess.close()
 
         return admins_model
@@ -39,6 +42,13 @@ class AdminsService:
         if db_admin:
             return db_admin_to_model(db_admin)
         return None
+
+    # Верификация пользователя
+    def check_user_credentials(self, email: str, password: str) -> bool:
+        user = self.find_user_by_email(email)
+        if not user:
+            return False
+        return check_password_hash(user.password, password)
 
     # Зашифровать пароль
     def hash_password(self, password: str) -> str:

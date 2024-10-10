@@ -2,6 +2,7 @@ import json
 import threading
 import random
 import datetime
+from datetime import datetime
 from pyexpat.errors import messages
 
 import jwt as jwt
@@ -12,6 +13,7 @@ from flask_login import LoginManager, login_user, logout_user
 from model.user import user_from_dict
 from model.admins import AdminsModel
 from model.recommendation import RecommendationModel
+from model.status_recommendation import RecommendationStatusModel
 from service.cyber_advent_service import CyberAdventService
 from service.statistics_service import StatisticsService
 from service.statuses_service import StatusRecommendationService
@@ -382,14 +384,19 @@ class RestController:
                 else:
                     return not_found_error(f"Рекомендация с ID {id} не найдена")
             if form.validate_on_submit():
-                pass
-                # rec = await self.advent_service.get_recommendation_info_by_id(id)
-                # if rec:
-                #     recommendation = RecommendationModel(num=id, text=form.recommendation.data, media=form.media.data)
-                #     self.advent_service.update_recommendation(recommendation)
-                #     return redirect('/')
-                # else:
-                #     return not_found_error(f"Рекомендация с ID {id} не найдена")
+                rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(user_id, rec_id)
+                if rec:
+                    date = form.date_posted.data
+                    time = form.time_posted.data
+                    dt = datetime(date.year, date.month, date.day, time.hour, time.minute, time.second)
+                    public = 0
+                    if form.public.data:
+                        public = 1
+                    status = RecommendationStatusModel(send_time=dt, rec_header=form.header.data, rec_status_public=public)
+                    self.status_recommendation_service.update_status_recommendation(status)
+                    return redirect('/')
+                else:
+                    return not_found_error(f"Рекомендация с ID {id} не найдена")
             return render_template('status.html',
                                    title='Редактирование статуса рекомендации',
                                    form=form,

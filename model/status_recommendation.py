@@ -4,7 +4,7 @@ from data.status_recommendation import Status_recommendation
 
 
 class RecommendationStatusModel:
-    def __init__(self, id: int = None, rec_id: int = None, user_id: int = None, send_time: datetime = None,
+    def __init__(self, rec_id: int = None, user_id: int = None, send_time: datetime = None,
                  telegram_id: str = None, telegram_message_id: str = None, rec_status: str = None,
                  rec_status_public: int = None, rec_header: str = None):
         self.rec_id = rec_id
@@ -18,7 +18,7 @@ class RecommendationStatusModel:
 
 
 def db_recommendation_status_to_model(db_recommendation_status: Status_recommendation) -> RecommendationStatusModel:
-    return RecommendationStatusModel(db_recommendation_status.id, db_recommendation_status.rec_id, db_recommendation_status.user_id,
+    return RecommendationStatusModel(db_recommendation_status.rec_id, db_recommendation_status.user_id,
                                      db_recommendation_status.send_time, db_recommendation_status.chat_id,
                                      db_recommendation_status.message_id, db_recommendation_status.rec_status,
                                      db_recommendation_status.rec_status_public, db_recommendation_status.rec_header)

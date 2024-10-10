@@ -37,29 +37,40 @@
 
     <h1>Список выданных рекомендаций:</h1>
     <br>
-    {% for user in status_rec %}
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.id.label }}<br>
+            {{ form.id(class="form-control") }}<br>
+            {% for error in form.id.errors %}
+                <p class="alert alert-danger" role="alert">
+                    {{ error }}
+                </p>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+        {{ message }}
+    </form>
+    {% if user %}
         <h3>{{ user.name }}</h3>
         <div>
-            {% for stat in status_rec[user] %}
+            {% for rec in sent_recs %}
                 <div class="col-md6 border rounded">
                 <div style="font-size: 20px">
-                        Заголовок -
-                        {{ stat["status_object"].rec_header }}
+                        Заголовок - {{ rec.text }}
                     </div>
                     <div style="font-size: 20px">
-                        {{ stat["status_object"].rec_id }}.
-                        {{ stat["text_recommendation"] }}
+                        {{ rec.rec_id }}. {{ rec.text }}
                     </div>
                     <div style="font-size: 20px">
-                        Статус публикации -
-                        {{ statuses[stat["status_object"].rec_status_public] }}
+                        Статус публикации - {{ statuses[rec.rec_status] }}
                     </div>
                     <div style="font-size: 20px">
-                         Дата и время публикации - {{ stat["status_object"].registration_day }}
+                         Дата и время публикации - {{ rec.send_time }}
                     </div>
                     {% if is_auth %}
                     <div>
-                        <a href="/status/{{ stat["status_object"].id }}" class="btn btn-warning">
+                        <a href="/users/{{ user.user_id }}/status/{{ rec.rec_id }}" class="btn btn-warning">
                             Изменить
                         </a>
                         <a href="/" class="btn btn-danger">
@@ -70,6 +81,6 @@
                 </div>
             {% endfor %}
         </div>
-    {% endfor %}
+    {% endif %}
   {% endif %}
 {% endblock %}

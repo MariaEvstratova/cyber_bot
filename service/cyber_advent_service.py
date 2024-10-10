@@ -218,6 +218,7 @@ class CyberAdventService:
         j = join(Status_recommendation, Recommendation, Status_recommendation.rec_id == Recommendation.id)
         sent_recommendations = (db_sess.query(Status_recommendation.rec_id,
                                               Status_recommendation.rec_status,
+                                              Status_recommendation.send_time,
                                               Recommendation.recommendation)
                                 .select_from(j)
                                 .filter(Status_recommendation.user_id == user_id)
@@ -227,8 +228,30 @@ class CyberAdventService:
                                 .all())
         result = list()
         for idx, rec in enumerate(sent_recommendations):
-            rec_id, rec_status, rec_name = rec[0], rec[1], rec[2]
-            result.append(SentRecommendationModel(rec_id, rec_status, rec_name))
+            rec_id, rec_status, send_time, rec_name = rec[0], rec[1], rec[2], rec[3]
+            result.append(SentRecommendationModel(rec_id, rec_status, rec_name, send_time))
+        db_sess.close()
+        return result
+
+
+    # Получить страницу с отправленными рекомендациями
+    async def get_all_sent_recommendation(self, user_id: int) -> list[SentRecommendationModel]:
+        db_sess = db_session.create_session()
+
+        # Получаем пять последних отправленных рекомендаций пользователю
+        j = join(Status_recommendation, Recommendation, Status_recommendation.rec_id == Recommendation.id)
+        sent_recommendations = (db_sess.query(Status_recommendation.rec_id,
+                                              Status_recommendation.rec_status,
+                                              Status_recommendation.send_time,
+                                              Recommendation.recommendation)
+                                .select_from(j)
+                                .filter(Status_recommendation.user_id == user_id)
+                                .order_by(Status_recommendation.rec_id.asc())
+                                .all())
+        result = list()
+        for idx, rec in enumerate(sent_recommendations):
+            rec_id, rec_status, send_time, rec_name = rec[0], rec[1], rec[2], rec[3]
+            result.append(SentRecommendationModel(rec_id, rec_status, rec_name, send_time))
         db_sess.close()
         return result
 

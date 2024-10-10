@@ -18,7 +18,7 @@ class RecommendationStatusModel:
 
 
 def db_recommendation_status_to_model(db_recommendation_status: Status_recommendation) -> RecommendationStatusModel:
-    return RecommendationStatusModel(db_recommendation_status.rec_id, db_recommendation_status.user_id,
+    return RecommendationStatusModel(db_recommendation_status.id, db_recommendation_status.rec_id, db_recommendation_status.user_id,
                                      db_recommendation_status.send_time, db_recommendation_status.chat_id,
                                      db_recommendation_status.message_id, db_recommendation_status.rec_status,
                                      db_recommendation_status.rec_status_public, db_recommendation_status.rec_header)

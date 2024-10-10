@@ -2,6 +2,7 @@ import json
 import threading
 import random
 import datetime
+from pyexpat.errors import messages
 
 import jwt as jwt
 from flasgger import Swagger
@@ -13,13 +14,13 @@ from model.admins import AdminsModel
 from model.recommendation import RecommendationModel
 from service.cyber_advent_service import CyberAdventService
 from service.statistics_service import StatisticsService
+from service.statuses_service import StatusRecommendationService
 from service.user_service import UserService
 from service.admins_service import AdminsService
-from service.statuses_service import StatusRecommendationService
 
 from forms.admins import RegisterForm, LoginForm
 from forms.recs import RecsForm
-from forms.statuses import StatusForm
+from forms.statuses import StatusForm, UserForm
 from web.statistics_api import StatisticsApi
 
 login_manager = LoginManager()
@@ -196,24 +197,33 @@ class RestController:
         def health():
             return '{"Up!"}'
 
-        @self.web.route("/")
+        @self.web.route("/", methods=['GET', 'POST'])
         async def index():
+            form = UserForm()
             all_recommendations = self.advent_service.get_all_recommendations()
-            all_statuses = await self.status_recommendation_service.get_all_statuses_recommendations()
-            recs = await self.status_recommendation_service.get_text_of_all_statuses_recommendations()
-            status_rec = []
-            for i in range(len(all_statuses)):
-                status_rec.append({'status_object': all_statuses[i], 'text_recommendation': recs[i]})
-            sorted_statuses = {}
-            for i in status_rec:
-                user_id = i['status_object'].user_id
+            sent_recs = []
+            user = None
+            if form.validate_on_submit():
+                user_id = form.id.data
                 user = await self.user_service.find_user_by_id(user_id)
-                if user in sorted_statuses:
-                    sorted_statuses[user].append(i)
-                else:
-                    sorted_statuses[user] = [i]
-            return render_template("index.html", recs=all_recommendations,
-                                   status_rec=sorted_statuses, statuses=['не опубликована', 'опубликована'], is_auth=check_authorization_bearer(request))
+                if not user:
+                    return render_template("index.html",
+                                           form=form,
+                                           message=f"Пользователь с ID {user_id} не найден",
+                                           recs=all_recommendations,
+                                           statuses=['не опубликована', 'опубликована'],
+                                           is_auth=check_authorization_bearer(request),
+                                           )
+                sent_recs = await self.advent_service.get_all_sent_recommendation(user_id)
+
+            return render_template("index.html",
+                                   form=form,
+                                   user=user,
+                                   recs=all_recommendations,
+                                   sent_recs=sent_recs,
+                                   statuses=['не опубликована', 'опубликована'],
+                                   is_auth=check_authorization_bearer(request),
+                                   )
 
 
         @self.web.route('/register', methods=['GET', 'POST'])
@@ -305,7 +315,7 @@ class RestController:
         def add_recs():
             if not check_authorization_bearer(request):
                 return render_template('auth_error.html', title='Ошибка авторизации')
-            
+
             form = RecsForm()
             if form.validate_on_submit():
                 number = len(self.advent_service.get_all_recommendations()) + 1
@@ -313,7 +323,7 @@ class RestController:
                 self.advent_service.create_recommendation(new_rec)
                 return redirect('/')
             return render_template('rec.html', title='Добавление рекомендации',
-                                   form=form)
+                                   form=form, is_auth=check_authorization_bearer(request))
 
         @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
         async def edit_recs(id):
@@ -338,7 +348,8 @@ class RestController:
                     return not_found_error(f"Рекомендация с ID {id} не найдена")
             return render_template('rec.html',
                                    title='Редактирование рекомендации',
-                                   form=form
+                                   form=form,
+                                   is_auth=check_authorization_bearer(request)
                                    )
 
         @self.web.route('/rec_delete/<int:id>', methods=['GET', 'POST'])
@@ -353,14 +364,14 @@ class RestController:
             else:
                 return not_found_error(f"Рекомендация с ID {id} не найдена")
 
-        @self.web.route('/status/<int:id>', methods=['GET', 'POST'])
-        async def edit_status(id):
+        @self.web.route('/users/<int:user_id>/status/<int:rec_id>', methods=['GET', 'POST'])
+        async def edit_status(user_id: int, rec_id: int):
             if not check_authorization_bearer(request):
                 return render_template('auth_error.html', title='Ошибка авторизации')
 
             form = StatusForm()
             if request.method == "GET":
-                rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(id)
+                rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(user_id, rec_id)
                 if rec:
                     form.header.data = rec.rec_header
                     date = rec.send_time.date()
@@ -381,7 +392,8 @@ class RestController:
                 #     return not_found_error(f"Рекомендация с ID {id} не найдена")
             return render_template('status.html',
                                    title='Редактирование статуса рекомендации',
-                                   form=form
+                                   form=form,
+                                   is_auth=check_authorization_bearer(request)
                                    )
 
 

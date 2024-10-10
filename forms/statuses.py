@@ -6,6 +6,10 @@ from wtforms import BooleanField, SubmitField
 from wtforms.validators import DataRequired
 
 
+class UserForm(FlaskForm):
+    id = TextAreaField("Идентификатор пользователя")
+    submit = SubmitField('Получить список рекомендаций')
+
 class StatusForm(FlaskForm):
     header = TextAreaField("Заголовок")
     date_posted = DateField('Дата', format='%Y-%m-%d')

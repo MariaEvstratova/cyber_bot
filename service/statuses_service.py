@@ -36,9 +36,9 @@ class StatusRecommendationService:
         return db_stats
 
     # Получить описание статуса рекомендации по ID
-    async def get_status_recommendation_info_by_id(self, stat_id: int) -> Optional[RecommendationStatusModel]:
+    async def get_status_recommendation_info_by_id(self, user_id: int, rec_id: int) -> Optional[RecommendationStatusModel]:
         db_sess = db_session.create_session()
-        db_stat = db_sess.query(Status_recommendation).filter(Status_recommendation.id == stat_id).first()
+        db_stat = db_sess.query(Status_recommendation).filter(Status_recommendation.user_id == user_id, Status_recommendation.rec_id == rec_id).first()
         db_sess.close()
         if db_stat:
             return db_recommendation_status_to_model(db_stat)

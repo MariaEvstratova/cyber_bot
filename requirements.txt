@@ -9,5 +9,6 @@ python-telegram-bot[job-queue]==21.0.1
 pytz==2024.1
 psycopg2==2.9.9
 PyJWT==2.9.0
+request=2.32.3
 Werkzeug==3.0.4
 flasgger==0.9.7.1

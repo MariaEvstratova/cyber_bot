@@ -7,19 +7,19 @@
 </div>
 <br>
 {#{% if current_user.is_authenticated %}#}
-    <a href="/add" class="btn btn-secondary">Добавить рекомендацию</a>
+    <a href="/rec" class="btn btn-secondary">Добавить рекомендацию</a>
 <br><br>
 <h1>Список рекомендаций:</h1>
 <br>
 {% for rec in recs%}
 <div class="col-md6 border rounded">
-    <h2>{{rec.id}}</h2>
-    <div>
+    <h2>{{rec.num}}</h2>
+    <div style="font-size: 20px">
         {{rec.text}}
     </div>
 {#    {% if current_user.is_authenticated%}#}
         <div>
-            <a href="/" class="btn btn-warning">
+            <a href="/rec/{{ rec.num }}" class="btn btn-warning">
                 Изменить
             </a>
             <a href="/" class="btn btn-danger">

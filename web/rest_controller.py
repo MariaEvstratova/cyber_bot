@@ -8,6 +8,7 @@ from flasgger import Swagger
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
 from flask_login import LoginManager
 
+from model.user import UserModel
 from model.admins import AdminsModel
 from model.recommendation import RecommendationModel
 from service.cyber_advent_service import CyberAdventService
@@ -194,7 +195,7 @@ class RestController:
                 return redirect('/')
             return render_template('register.html', title='Регистрация', form=form)
 
-        @self.web.route('/add', methods=['GET', 'POST'])
+        @self.web.route('/rec', methods=['GET', 'POST'])
         # @self.login_required
         def add_news():
             form = RecsForm()
@@ -206,6 +207,41 @@ class RestController:
             return render_template('rec.html', title='Добавление рекомендации',
                                    form=form)
 
+        @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
+        # @login_required
+        def edit_news(id):
+            form = RecsForm()
+            if request.method == "GET":
+                rec = await self.advent_service.get_recommendation_info_by_id(id)
+                if rec:
+                    form.recommendation.data = rec.text
+                    form.media.data = rec.media
+                else:
+                    return not_found(f"Рекомендация с ID {id} не найдена")
+            if form.validate_on_submit():
+                rec = await self.advent_service.get_recommendation_info_by_id(id)
+                if rec:
+                    recommendation = RecommendationModel(num=id, text=form.recommendation.data, media=form.media.data)
+                    self.advent_service.update_recommendation(recommendation)
+                    return redirect('/')
+                else:
+                    return not_found(f"Рекомендация с ID {id} не найдена")
+            return render_template('rec.html',
+                                   title='Редактирование рекомендации',
+                                   form=form
+                                   )
+
+        # @self.web.route('/rec_delete/<int:id>', methods=['GET', 'POST'])
+        # def news_delete(id):
+        #     rec = await self.advent_service.get_recommendation_info_by_id(id)
+        #     if rec:
+        #         self.advent_service.delete_recommendation(rec)
+        #         return redirect('/')
+        #     else:
+        #         return not_found(f"Рекомендация с ID {id} не найдена")
+        #     return redirect('/')
+        #
+        # db_session.global_init("db/blogs.db")
 
         @self.web.route("/api/private/users", methods=['GET'])
         def get_users():
@@ -341,6 +377,18 @@ class RestController:
                 return json.dumps(recommendation.to_dict(), ensure_ascii=False)
             else:
                 return internal_error("Не удалось получить рекомендацию")
+
+        @self.web.route("/api/private/users", methods=['POST'])
+        async def post_user():
+            user_data = request.get_json()
+            user_model = UserModel(
+                name=user_data['name'], age_group=user_data['age_group'],
+                registration_day=user_data['registration_day'], schedule=user_data['age_group'],
+                sex=user_data['sex'], time=user_data['time'],
+                timezone=user_data['timezone'], period=user_data['period'],
+                advent_start=user_data['advent_start'])
+            new_user = self.user_service.create_user(user_model)
+            return json.dumps(new_user.to_dict(), ensure_ascii=False)
 
 
         def not_found(message):

@@ -21,3 +21,4 @@ class Status_recommendation(SqlAlchemyBase, UserMixin, SerializerMixin):
     rec_id = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default='0')
     rec_status = sqlalchemy.Column(sqlalchemy.String, nullable=False, default='0')
     rec_status_public = sqlalchemy.Column(sqlalchemy.Integer, default=1)
+    rec_header = sqlalchemy.Column(sqlalchemy.String)

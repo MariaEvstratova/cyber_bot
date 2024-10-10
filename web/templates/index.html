@@ -38,6 +38,10 @@
         <div>
             {% for stat in status_rec[user] %}
                 <div class="col-md6 border rounded">
+                <div style="font-size: 20px">
+                        Заголовок -
+                        {{ stat["status_object"].rec_header }}
+                    </div>
                     <div style="font-size: 20px">
                         {{ stat["status_object"].rec_id }}.
                         {{ stat["text_recommendation"] }}
@@ -51,7 +55,7 @@
                     </div>
                     {#    {% if current_user.is_authenticated%}#}
                     <div>
-                        <a href="/" class="btn btn-warning">
+                        <a href="/status/{{ stat["status_object"].id }}" class="btn btn-warning">
                             Изменить
                         </a>
                         <a href="/" class="btn btn-danger">

@@ -20,6 +20,7 @@ from service.statuses_service import StatusRecommendationService
 
 from forms.admins import RegisterForm, LoginForm
 from forms.recs import RecsForm
+from forms.statuses import StatusForm
 from web.statistics_api import StatisticsApi
 
 login_manager = LoginManager()
@@ -308,6 +309,35 @@ class RestController:
                 return redirect('/')
             else:
                 return not_found(f"Рекомендация с ID {id} не найдена")
+
+        @self.web.route('/status/<int:id>', methods=['GET', 'POST'])
+        # @login_required
+        async def edit_status(id):
+            form = StatusForm()
+            if request.method == "GET":
+                rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(id)
+                if rec:
+                    form.header.data = rec.rec_header
+                    date = rec.send_time.date()
+                    time = rec.send_time.time()
+                    form.date_posted.data = date
+                    form.time_posted.data = time
+                    form.public.data = True
+                else:
+                    return not_found(f"Рекомендация с ID {id} не найдена")
+            if form.validate_on_submit():
+                pass
+                # rec = await self.advent_service.get_recommendation_info_by_id(id)
+                # if rec:
+                #     recommendation = RecommendationModel(num=id, text=form.recommendation.data, media=form.media.data)
+                #     self.advent_service.update_recommendation(recommendation)
+                #     return redirect('/')
+                # else:
+                #     return not_found(f"Рекомендация с ID {id} не найдена")
+            return render_template('status.html',
+                                   title='Редактирование статуса рекомендации',
+                                   form=form
+                                   )
 
 
         @self.web.route("/api/public/advice/random", methods=['GET'])

@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+{% if is_auth %}
 <h1>Рекомендации</h1>
+{% else %}
+<h1>Для просмотра списка рекомендаций - авторизуйтесь</h1>
+{% endif %}
 <div>
     Авторы: команда - IT Developer, Новосибирск, 2024 г.
 </div>
 <br>
-{#{% if current_user.is_authenticated %}#}
+{% if is_auth %}
     <a href="/rec" class="btn btn-secondary">Добавить рекомендацию</a>
 <br><br>
 <h1>Список рекомендаций:</h1>
 <br>
 {% for rec in recs%}
 <div class="col-md6 border rounded">
-    <h2>{{rec.num}}</h2>
     <div style="font-size: 20px">
-        {{rec.text}}
+        {{rec.num}}. {{rec.text}}
     </div>
-{#    {% if current_user.is_authenticated%}#}
+{% if is_auth %}
         <div>
             <a href="/rec/{{ rec.num }}" class="btn btn-warning">
                 Изменить
@@ -26,9 +30,9 @@
                 Удалить
             </a>
         </div>
-{#    {% endif %}#}
+{% endif %}
 </div>
 <br>
 {% endfor %}
-{#{% endif %}#}
+{% endif %}
 {% endblock %}

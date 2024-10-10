@@ -52,6 +52,8 @@ class UserService:
             db_user.Timezone = user_model.timezone
         if user_model.period:
             db_user.Period = user_model.period
+        if user_model.advent_start:
+            db_user.Advent_Start = user_model.advent_start
 
         db_sess.add(db_user)
         db_sess.commit()

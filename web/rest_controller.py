@@ -6,7 +6,7 @@ import datetime
 import jwt as jwt
 from flasgger import Swagger
 from flask import Flask, request, jsonify, make_response, render_template, flash, redirect
-from flask_login import LoginManager
+from flask_login import LoginManager, login_user, current_user, logout_user
 
 from model.user import user_from_dict
 from model.admins import AdminsModel
@@ -195,7 +195,7 @@ class RestController:
         @self.web.route("/")
         def index():
             all_recommendations = self.advent_service.get_all_recommendations()
-            return render_template("index.html", recs=all_recommendations)
+            return render_template("index.html", recs=all_recommendations, is_auth=check_authorization_bearer(request))
 
 
         @self.web.route('/register', methods=['GET', 'POST'])
@@ -212,13 +212,43 @@ class RestController:
                                            form=form,
                                            message="Такой пользователь уже есть")
                 new_admin = AdminsModel(name=form.name.data, email=form.email.data, password=form.password.data)
-                self.admins_service.create_admin(new_admin)
-                return redirect('/')
+                created_admin = self.admins_service.create_admin(new_admin)
+                login_user(created_admin)
+                token = encode_auth_token(created_admin.id)
+                response = make_response(redirect('/'))
+                response.set_cookie("x-auth-token", token)
+                return response
             return render_template('register.html', title='Регистрация', form=form)
 
-
-        @self.web.route('/login', methods=['POST'])
+        @self.web.route('/login', methods=['GET', 'POST'])
         def login():
+            form = LoginForm()
+            if form.validate_on_submit():
+                admin = self.admins_service.find_user_by_email(form.email.data)
+                if not admin:
+                    return render_template('login.html', title='Авторизация',
+                                           form=form,
+                                           message="Пользователь не найден")
+                if not self.admins_service.check_user_credentials(form.email.data, form.password.data):
+                    return render_template('login.html', title='Авторизация',
+                                           form=form,
+                                           message="Неверно введен email или пароль")
+                login_user(admin)
+                token = encode_auth_token(admin.id)
+                response = make_response(redirect('/'))
+                response.set_cookie("x-auth-token", token)
+                return response
+            return render_template('login.html', title='Авторизация', form=form)
+
+        @self.web.route('/logout', methods=['GET'])
+        def logout():
+            logout_user()
+            response = make_response(redirect('/'))
+            response.set_cookie("x-auth-token", "")
+            return response
+
+        @self.web.route('/auth', methods=['POST'])
+        def auth():
             """Авторизация
                 Данное API возвращает JWT токен авторизованным пользователям
                 ---
@@ -244,19 +274,19 @@ class RestController:
             email = request.args.get("email", None)
             password = request.args.get("password", None)
             if not email or not password:
-                return internal_error("Ошибка авторизации")
+                return unauthorize_error("Не передан email или пароль")
             admin = self.admins_service.find_user_by_email(email)
             if not admin:
-                return internal_error("Ошибка авторизации")
+                return unauthorize_error("Пользователь не является администратором")
             if not self.admins_service.check_user_credentials(email, password):
-                return internal_error("Ошибка авторизации")
+                return unauthorize_error("Неверный email или пароль")
             return encode_auth_token(admin.id)
 
 
-
         @self.web.route('/rec', methods=['GET', 'POST'])
-        # @self.login_required
         def add_news():
+            if not check_authorization_bearer(request):
+                return render_template('auth_error.html', title='Ошибка авторизации')
             form = RecsForm()
             if form.validate_on_submit():
                 number = len(self.advent_service.get_all_recommendations()) + 1
@@ -267,7 +297,6 @@ class RestController:
                                    form=form)
 
         @self.web.route('/rec/<int:id>', methods=['GET', 'POST'])
-        # @login_required
         async def edit_news(id):
             form = RecsForm()
             if request.method == "GET":
@@ -405,7 +434,7 @@ class RestController:
                           $ref: '#/components/schemas/ErrorResponse'
             """
             try:
-                check_authorization(request)
+                check_authorization_header(request)
             except Exception as e:
                  return unauthorize_error(f"Отказано в доступe: {str(e)}")
 
@@ -456,7 +485,7 @@ class RestController:
                           $ref: '#/components/schemas/ErrorResponse'
             """
             try:
-                check_authorization(request)
+                check_authorization_header(request)
             except Exception as e:
                  return unauthorize_error(f"Отказано в доступe: {str(e)}")
 
@@ -509,7 +538,7 @@ class RestController:
                           $ref: '#/components/schemas/ErrorResponse'
             """
             try:
-                check_authorization(request)
+                check_authorization_header(request)
             except Exception as e:
                  return unauthorize_error(f"Отказано в доступe: {str(e)}")
 
@@ -579,7 +608,7 @@ class RestController:
                           $ref: '#/components/schemas/ErrorResponse'
             """
             try:
-                check_authorization(request)
+                check_authorization_header(request)
             except Exception as e:
                  return unauthorize_error(f"Отказано в доступe: {str(e)}")
 
@@ -595,7 +624,7 @@ class RestController:
             return json.dumps(updated_user.to_dict(), ensure_ascii=False)
 
 
-        def check_authorization(request):
+        def check_authorization_header(request):
             auth_header = request.headers.get('Authorization')
             if not auth_header:
                 raise Exception('Отсутствует заголовок Authorization')
@@ -608,6 +637,22 @@ class RestController:
                 return True
             else:
                 raise Exception('Пользователь не является администратором')
+
+        def check_authorization_bearer(request) -> bool:
+            try:
+                auth_token = request.cookies.get("x-auth-token", None)
+                if not auth_token:
+                    return False
+                admin_id = decode_auth_token(auth_token)
+                if not admin_id:
+                    return False
+                admin = self.admins_service.find_user_by_id(admin_id)
+                if admin:
+                    return True
+                else:
+                    return False
+            except Exception:
+                return False
 
         def encode_auth_token(user_id: int) -> str:
             payload = {

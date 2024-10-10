@@ -14,6 +14,31 @@ REC_STATUS_INIT, REC_STATUS_DONE, REC_STATUS_SKIP = '0', '1', '2'
 
 class CyberAdventService:
 
+    # Добавление рекомендации
+    def create_recommendation(self, rec_model: RecommendationModel) -> RecommendationModel:
+        recommendation = Recommendation()
+
+        recommendation.Id = rec_model.num
+        recommendation.Recommendation = recommendation.recommendation
+        db_sess = db_session.create_session()
+        db_sess.add(recommendation)
+        db_sess.commit()
+        db_sess.close()
+        return rec_model
+
+    # Обновление рекомендации
+    # def update_recommendation(self, recommendation_model: RecommendationModel) -> RecommendationModel:
+    #     rec = Recommendation()
+    #     rec.id = recommendation_model.num
+    #     rec.recommendation = recommendation_model.text
+    #
+    #     db_sess = db_session.create_session()
+    #     db_sess.add(rec)
+    #     db_sess.commit()
+    #     db_sess.close()
+    #
+    #     return recommendation_model
+
     # Количество рекомендаций в адвенте
     async def get_recommendation_count(self) -> int:
         db_sess = db_session.create_session()

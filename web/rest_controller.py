@@ -32,6 +32,7 @@ login_manager = LoginManager()
 class RestController:
 
     def __init__(self,
+                 sever,
                  port,
                  secret_key,
                  user_service: UserService,
@@ -40,6 +41,7 @@ class RestController:
                  statistics_service: StatisticsService,
                  status_recommendation_service: StatusRecommendationService
                  ):
+        self.sever = sever
         self.port = port
         self.user_service = user_service
         self.advent_service = advent_service
@@ -99,7 +101,7 @@ class RestController:
             "openapi": "3.0.3",
             "servers": [
                 {
-                    "url": f"http://localhost:{self.port}"
+                    "url": f"http://{self.sever}:{self.port}"
                 }
             ],
             "components": {

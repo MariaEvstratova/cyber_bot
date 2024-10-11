@@ -762,7 +762,7 @@ class RestController:
 
         def encode_auth_token(user_id: int) -> str:
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=5),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=10),
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_id
             }

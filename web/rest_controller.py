@@ -8,6 +8,8 @@ from pyexpat.errors import messages
 import jwt as jwt
 from flasgger import Swagger
 from flask import Flask, request, make_response, render_template, redirect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_login import LoginManager, login_user, logout_user
 
 from model.user import user_from_dict
@@ -48,11 +50,21 @@ class RestController:
         self.web.config['JSON_AS_ASCII'] = False
         self.web.config['SECRET_KEY'] = secret_key
         self.setup_swagger()
-        self.setup_routes()
+        self.limiter = self.setup_ratelimiter()
         login_manager.init_app(self.web)
-
+        self.setup_routes()
+        
         # Регистрируем дополнительное API для получения статистики
         StatisticsApi(statistics_service).register_api(self.web)
+
+    # Установка rate limite для API
+    def setup_ratelimiter(self) -> Limiter:
+        return Limiter(
+            get_remote_address,
+            app=self.web,
+            default_limits=["50 per minute", "500 per hour"],
+            storage_uri="memory://",
+        )
 
     def setup_swagger(self):
         template = {
@@ -196,6 +208,7 @@ class RestController:
             return self.admins_service.find_user_by_id(user_id)
 
         @self.web.route("/health")
+        @self.limiter.exempt
         def health():
             return '{"Up!"}'
 

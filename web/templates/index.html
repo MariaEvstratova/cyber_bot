@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    {% if is_auth %}
+    <h1>Рекомендации</h1>
+    {% else %}
+    <h1>Для просмотра списка рекомендаций - авторизуйтесь</h1>
+    {% endif %}
+    <div>
+        Авторы: команда - IT Developer, Новосибирск, 2024 г.
+    </div>
+    <br>
+    {% if is_auth %}
+    <a href="/rec" class="btn btn-secondary">Добавить рекомендацию</a>
+    <br><br>
+    <h1>Список рекомендаций:</h1>
+    <br>
+    {% for rec in recs %}
+        <div class="col-md6 border rounded">
+            <div style="font-size: 20px">
+                {{ rec.num }}. {{ rec.text }}
+            </div>
+            {% if is_auth %}
+            <div>
+                <a href="/rec/{{ rec.num }}" class="btn btn-warning">
+                    Изменить
+                </a>
+                <a href="/rec_delete/{{ rec.num }}" class="btn btn-danger">
+                    Удалить
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+    <br>
+
+    <h1>Список выданных рекомендаций:</h1>
+    <br>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.id.label }}<br>
+            {{ form.id(class="form-control") }}<br>
+            {% for error in form.id.errors %}
+                <p class="alert alert-danger" role="alert">
+                    {{ error }}
+                </p>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+        {{ message }}
+    </form>
+    {% if user %}
+        <h3>{{ user.name }}</h3>
+        <div>
+            {% for rec in sent_recs %}
+                <div class="col-md6 border rounded">
+                <div style="font-size: 20px">
+                        Заголовок - {{ rec.header }}
+                    </div>
+                    <div style="font-size: 20px">
+                        {{ rec.rec_id }}. {{ rec.text }}
+                    </div>
+                    <div style="font-size: 20px">
+                        Статус публикации - {{ rec.rec_status }}
+                    </div>
+                    <div style="font-size: 20px">
+                         Дата и время публикации - {{ rec.send_time }}
+                    </div>
+                    {% if is_auth %}
+                    <div>
+                        <a href="/users/{{ user.user_id }}/status/{{ rec.rec_id }}" class="btn btn-warning">
+                            Изменить
+                        </a>
+                        <a href="/users/{{ user.user_id }}/stat_delete/{{ rec.rec_id }}" class="btn btn-danger">
+                            Удалить
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

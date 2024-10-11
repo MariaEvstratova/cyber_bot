@@ -32,7 +32,7 @@ def client():
     status_recommendation_service = StatusRecommendationService()
 
     # Запуск REST-контроллера в фоне
-    app = RestController(5000, "changeit", user_service, advent_service, admins_service,
+    app = RestController(5000, None, "changeit", user_service, advent_service, admins_service,
                    statistics_service,
                    status_recommendation_service)
 

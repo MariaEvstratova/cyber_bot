@@ -57,13 +57,13 @@
             {% for rec in sent_recs %}
                 <div class="col-md6 border rounded">
                 <div style="font-size: 20px">
-                        Заголовок - {{ statuses[rec.rec_header] }}
+                        Заголовок - {{ rec.header }}
                     </div>
                     <div style="font-size: 20px">
                         {{ rec.rec_id }}. {{ rec.text }}
                     </div>
                     <div style="font-size: 20px">
-                        Статус публикации - {{ statuses[rec.rec_status] }}
+                        Статус публикации - {{ rec.rec_status }}
                     </div>
                     <div style="font-size: 20px">
                          Дата и время публикации - {{ rec.send_time }}

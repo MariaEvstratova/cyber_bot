@@ -53,7 +53,7 @@ class RestController:
         self.limiter = self.setup_ratelimiter()
         login_manager.init_app(self.web)
         self.setup_routes()
-        
+
         # Регистрируем дополнительное API для получения статистики
         StatisticsApi(statistics_service).register_api(self.web)
 
@@ -229,7 +229,7 @@ class RestController:
                                            statuses=['не опубликована', 'опубликована'],
                                            is_auth=check_authorization_bearer(request),
                                            )
-                sent_recs = await self.advent_service.get_all_sent_recommendation(user_id)
+                sent_recs = await self.status_recommendation_service.get_all_sent_recommendation(user_id)
 
             return render_template("index.html",
                                    form=form,
@@ -405,7 +405,13 @@ class RestController:
                     public = 0
                     if form.public.data:
                         public = 1
-                    status = RecommendationStatusModel(send_time=dt, rec_header=form.header.data, rec_status_public=public)
+                    status = RecommendationStatusModel(
+                        rec_id = rec_id,
+                        user_id= user_id,
+                        send_time=dt,
+                        rec_header=form.header.data,
+                        rec_status_public=public,
+                    )
                     self.status_recommendation_service.update_status_recommendation(status)
                     return redirect('/')
                 else:

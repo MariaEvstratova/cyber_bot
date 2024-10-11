@@ -16,24 +16,29 @@ REC_STATUS_INIT, REC_STATUS_DONE, REC_STATUS_SKIP = '0', '1', '2'
 
 class StatusRecommendationService:
 
-    async def get_text_of_all_statuses_recommendations(self):
-        db_sess = db_session.create_session()
-        db_stats = db_sess.query(Status_recommendation).all()
-        db_sess.close()
-        all_recs_statuses = []
-        for stat in db_stats:
-            id = stat.rec_id
-            advent_service = CyberAdventService()
-            rec = await advent_service.get_recommendation_info_by_id(id)
-            all_recs_statuses.append(rec.text)
 
-        return all_recs_statuses
-
-    async def get_all_statuses_recommendations(self):
+    # Получить страницу с отправленными рекомендациями
+    async def get_all_sent_recommendation(self, user_id: int) -> list[SentRecommendationModel]:
         db_sess = db_session.create_session()
-        db_stats = db_sess.query(Status_recommendation).all()
+
+        # Получаем пять последних отправленных рекомендаций пользователю
+        j = join(Status_recommendation, Recommendation, Status_recommendation.rec_id == Recommendation.id)
+        sent_recommendations = (db_sess.query(Status_recommendation.rec_id,
+                                              Status_recommendation.rec_status,
+                                              Status_recommendation.send_time,
+                                              Status_recommendation.rec_status_public,
+                                              Status_recommendation.rec_header,
+                                              Recommendation.recommendation)
+                                .select_from(j)
+                                .filter(Status_recommendation.user_id == user_id)
+                                .order_by(Status_recommendation.rec_id.asc())
+                                .all())
+        result = list()
+        for idx, rec in enumerate(sent_recommendations):
+            rec_id, rec_status, send_time, public_status, header, rec_name = rec[0], rec[1], rec[2], rec[3], rec[4], rec[5]
+            result.append(SentRecommendationModel(rec_id, rec_status, rec_name, send_time, public_status, header))
         db_sess.close()
-        return db_stats
+        return result
 
     # Получить описание статуса рекомендации по ID
     async def get_status_recommendation_info_by_id(self, user_id: int, rec_id: int) -> Optional[RecommendationStatusModel]:
@@ -51,11 +56,6 @@ class StatusRecommendationService:
                    .filter(Status_recommendation.user_id == stat_model.user_id, Status_recommendation.rec_id == stat_model.rec_id)
                    .first())
         if db_stat:
-            db_stat.rec_id = db_stat.rec_id
-            db_stat.user_id = db_stat.user_id
-            db_stat.telegram_id = db_stat.telegram_id
-            db_stat.telegram_message_id = db_stat.telegram_message_id
-            db_stat.rec_status = db_stat.rec_status
             db_stat.send_time = stat_model.send_time
             db_stat.rec_status_public = stat_model.rec_status_public
             db_stat.rec_header = stat_model.rec_header

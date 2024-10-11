@@ -4,6 +4,13 @@ python-telegram-bot==21.0.1
 flask==3.0.3
 flask_login==0.6.3
 flask[async]==3.0.3
+flask-wtf==1.2.1
 python-telegram-bot[job-queue]==21.0.1
 pytz==2024.1
 psycopg2==2.9.9
+PyJWT==2.9.0
+requests==2.32.3
+Werkzeug==3.0.4
+flasgger==0.9.7.1
+Flask-Limiter==3.8.0
+pytest==8.3.3

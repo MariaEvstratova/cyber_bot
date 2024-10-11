@@ -23,7 +23,7 @@ class UserModel:
 
     def to_dict(self):
         return {
-            'user_id': self.user_id,
+            'id': self.user_id,
             'name': self.name,
             'registration_day': self.registration_day.isoformat() if self.registration_day else None,
             'age_group': self.age_group,
@@ -36,6 +36,22 @@ class UserModel:
             'period': self.period,
             'advent_start': self.advent_start.isoformat() if self.advent_start else None,
         }
+
+
+def user_from_dict(user_data):
+    return UserModel(
+        name=user_data.get('name', None),
+        age_group=user_data.get('age_group', None),
+        registration_day=datetime.fromisoformat(user_data['registration_day']) if user_data.get('registration_day', None) else None,
+        schedule=user_data.get('schedule', None),
+        sex=user_data.get('sex', None),
+        time=user_data.get('time', None),
+        timezone=user_data.get('timezone', None),
+        period=user_data.get('period', None),
+        advent_start=datetime.fromisoformat(user_data['advent_start']) if user_data.get('advent_start', None) else None,
+        telegram_username=user_data.get('telegram_username', None),
+        telegram_id=user_data.get('telegram_id', None),
+    )
 
 
 def db_user_to_model(db_user: User) -> UserModel:

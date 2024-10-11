@@ -6,3 +6,4 @@ model/__pycache__/*
 web/__pycache__/*
 service/__pycache__/*
 view/__pycache__/*
+**/__pycache__/*

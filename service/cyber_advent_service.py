@@ -14,6 +14,31 @@ REC_STATUS_INIT, REC_STATUS_DONE, REC_STATUS_SKIP = '0', '1', '2'
 
 class CyberAdventService:
 
+    # Добавление рекомендации
+    def create_recommendation(self, rec_model: RecommendationModel) -> RecommendationModel:
+        recommendation = Recommendation()
+
+        recommendation.id = rec_model.num
+        recommendation.recommendation = rec_model.text
+        recommendation.media = rec_model.media
+        db_sess = db_session.create_session()
+        db_sess.add(recommendation)
+        db_sess.commit()
+        db_sess.close()
+        return rec_model
+
+    # Обновление рекомендации
+    def update_recommendation(self, rec_model: RecommendationModel) -> RecommendationModel:
+        db_sess = db_session.create_session()
+        db_rec = db_sess.query(Recommendation).filter(Recommendation.id == rec_model.num).first()
+        db_rec.id = rec_model.num
+        db_rec.recommendation = rec_model.text
+        db_rec.media = rec_model.media
+        db_sess.commit()
+        db_sess.close()
+
+        return rec_model
+
     # Количество рекомендаций в адвенте
     async def get_recommendation_count(self) -> int:
         db_sess = db_session.create_session()
@@ -31,6 +56,14 @@ class CyberAdventService:
             return db_recommendation_to_model(db_rec)
         return None
 
+    async def delete_recommendation(self, rec_model: RecommendationModel):
+        db_sess = db_session.create_session()
+        db_rec = db_sess.query(Recommendation).filter(Recommendation.id == rec_model.num).first()
+        db_sess.delete(db_rec)
+        db_sess.commit()
+        db_sess.close()
+        return None
+
 
     # Количество отправленных рекомендаций пользователю
     async def sent_recommendation_count(self, user_id: int) -> int:
@@ -39,6 +72,14 @@ class CyberAdventService:
                                       .filter(Status_recommendation.user_id == user_id)
                                       .count()
                                       )
+        db_sess.close()
+        return sent_recommendations_count
+
+
+    # Количество отправленных рекомендаций в общем
+    async def sent_all_recommendation_count(self) -> int:
+        db_sess = db_session.create_session()
+        sent_recommendations_count = (db_sess.query(Status_recommendation).count())
         db_sess.close()
         return sent_recommendations_count
 
@@ -64,6 +105,21 @@ class CyberAdventService:
                                            )
         db_sess.close()
         return completed_recommendations_count >= recommendations_count
+
+
+
+    # Количество пользователей, выполнивших адвент
+    async def get_users_count_with_advent_completed(self) -> int:
+        # Определяем количество рекомендаций, которые в принципе нужно было отправить
+        recommendations_count = await self.get_recommendation_count()
+
+        db_sess = db_session.create_session()
+        completed_recommendations_count = (db_sess.query(Status_recommendation)
+                                           .filter(Status_recommendation.rec_id == recommendations_count)
+                                           .count()
+                                           )
+        db_sess.close()
+        return completed_recommendations_count
 
 
     # Получить статус отправленной ранее рекомендации пользователю по ID
@@ -161,6 +217,7 @@ class CyberAdventService:
         j = join(Status_recommendation, Recommendation, Status_recommendation.rec_id == Recommendation.id)
         sent_recommendations = (db_sess.query(Status_recommendation.rec_id,
                                               Status_recommendation.rec_status,
+                                              Status_recommendation.send_time,
                                               Recommendation.recommendation)
                                 .select_from(j)
                                 .filter(Status_recommendation.user_id == user_id)
@@ -170,8 +227,30 @@ class CyberAdventService:
                                 .all())
         result = list()
         for idx, rec in enumerate(sent_recommendations):
-            rec_id, rec_status, rec_name = rec[0], rec[1], rec[2]
-            result.append(SentRecommendationModel(rec_id, rec_status, rec_name))
+            rec_id, rec_status, send_time, rec_name = rec[0], rec[1], rec[2], rec[3]
+            result.append(SentRecommendationModel(rec_id, rec_status, rec_name, send_time))
+        db_sess.close()
+        return result
+
+
+    # Получить страницу с отправленными рекомендациями
+    async def get_all_sent_recommendation(self, user_id: int) -> list[SentRecommendationModel]:
+        db_sess = db_session.create_session()
+
+        # Получаем пять последних отправленных рекомендаций пользователю
+        j = join(Status_recommendation, Recommendation, Status_recommendation.rec_id == Recommendation.id)
+        sent_recommendations = (db_sess.query(Status_recommendation.rec_id,
+                                              Status_recommendation.rec_status,
+                                              Status_recommendation.send_time,
+                                              Recommendation.recommendation)
+                                .select_from(j)
+                                .filter(Status_recommendation.user_id == user_id)
+                                .order_by(Status_recommendation.rec_id.asc())
+                                .all())
+        result = list()
+        for idx, rec in enumerate(sent_recommendations):
+            rec_id, rec_status, send_time, rec_name = rec[0], rec[1], rec[2], rec[3]
+            result.append(SentRecommendationModel(rec_id, rec_status, rec_name, send_time))
         db_sess.close()
         return result
 
@@ -222,6 +301,28 @@ class CyberAdventService:
         db_sess.close()
 
         return rec
+
+
+    # Получить список
+    def get_all_recommendations(self) -> list[RecommendationModel]:
+        db_sess = db_session.create_session()
+        db_recs = db_sess.query(Recommendation).all()
+        db_sess.close()
+        all_recs = []
+        for rec in db_recs:
+            all_recs.append(db_recommendation_to_model(rec))
+        return all_recs
+
+
+    # Получение всех существующих рекомендаций
+    def get_all_recommendations(self) -> list[RecommendationModel]:
+        db_sess = db_session.create_session()
+        db_recs = db_sess.query(Recommendation).all()
+        db_sess.close()
+        all_recs = []
+        for rec in db_recs:
+            all_recs.append(db_recommendation_to_model(rec))
+        return all_recs
 
 
     # Проинициализировать список рекомендаций для адвента

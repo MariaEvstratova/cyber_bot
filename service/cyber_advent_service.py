@@ -34,7 +34,6 @@ class CyberAdventService:
         db_rec.id = rec_model.num
         db_rec.recommendation = rec_model.text
         db_rec.media = rec_model.media
-        db_sess.add(db_rec)
         db_sess.commit()
         db_sess.close()
 

@@ -49,10 +49,14 @@ class StatusRecommendationService:
         db_sess = db_session.create_session()
         db_stat = db_sess.query(Status_recommendation).filter(Status_recommendation.user_id == stat_model.user_id, Status_recommendation.rec_id == stat_model.rec_id).first()
         if db_stat:
+            db_stat.rec_id = db_stat.rec_id
+            db_stat.user_id = db_stat.user_id
+            db_stat.telegram_id = db_stat.telegram_id
+            db_stat.telegram_message_id = db_stat.telegram_message_id
+            db_stat.rec_status = db_stat.rec_status
             db_stat.send_time = stat_model.send_time
             db_stat.rec_status_public = stat_model.rec_status_public
             db_stat.rec_header = stat_model.rec_header
-            db_sess.add(db_stat)
             db_sess.commit()
         db_sess.close()
 
@@ -60,7 +64,7 @@ class StatusRecommendationService:
 
     async def delete_status(self, stat_model: RecommendationStatusModel):
         db_sess = db_session.create_session()
-        db_rec = db_sess.query(Recommendation).filter(Status_recommendation.user_id == stat_model.user_id, Status_recommendation.rec_id == stat_model.rec_id).first()
+        db_rec = db_sess.query(Status_recommendation).filter(Status_recommendation.user_id == stat_model.user_id, Status_recommendation.rec_id == stat_model.rec_id).first()
         db_sess.delete(db_rec)
         db_sess.commit()
         db_sess.close()

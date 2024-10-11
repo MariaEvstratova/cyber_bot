@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self):
-        self.web_server = os.environ.get("SERVER", "http://localhost")
         self.web_port = int(os.environ.get("PORT", 5000))
+        self.web_public_url = os.environ.get("PUBLIC_URL", None)
         self.secret_key = os.environ.get("SECRET_KEY", "changeit")
         self.bot_token = os.environ.get('API_BOT_TOKEN', '6522784356:AAHB7lKSBukJDq-Tq3SAB9mxql95Cn9Dutg')
         self.bot_name = os.environ.get('BOT_NAME', 'Cyber_safeness_bot')
@@ -44,7 +44,7 @@ def main():
     status_recommendation_service = StatusRecommendationService()
 
     # Запуск REST-контроллера в фоне
-    RestController(config.web_server, config.web_port, config.secret_key, user_service, advent_service, admins_service, statistics_service,
+    RestController(config.web_port, config.web_public_url, config.secret_key, user_service, advent_service, admins_service, statistics_service,
                    status_recommendation_service).run_background()
     # Запуск telegram бота
     TelegramBot(config.bot_token, config.bot_name, user_service, advent_service).run()

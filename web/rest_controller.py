@@ -32,8 +32,8 @@ login_manager = LoginManager()
 class RestController:
 
     def __init__(self,
-                 sever,
                  port,
+                 web_public_url,
                  secret_key,
                  user_service: UserService,
                  advent_service: CyberAdventService,
@@ -41,8 +41,8 @@ class RestController:
                  statistics_service: StatisticsService,
                  status_recommendation_service: StatusRecommendationService
                  ):
-        self.sever = sever
         self.port = port
+        self.web_public_url = web_public_url
         self.user_service = user_service
         self.advent_service = advent_service
         self.admins_service = admins_service
@@ -97,11 +97,15 @@ class RestController:
                 }
             ]
         }
+        if self.web_public_url:
+            server = self.web_public_url
+        else:
+            server = f"http://localhost:{self.port}"
         config = {
             "openapi": "3.0.3",
             "servers": [
                 {
-                    "url": f"http://{self.sever}:{self.port}"
+                    "url":server
                 }
             ],
             "components": {

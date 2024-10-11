@@ -57,3 +57,11 @@ class StatusRecommendationService:
         db_sess.close()
 
         return stat_model
+
+    async def delete_status(self, stat_model: RecommendationStatusModel):
+        db_sess = db_session.create_session()
+        db_rec = db_sess.query(Recommendation).filter(Status_recommendation.user_id == stat_model.user_id, Status_recommendation.rec_id == stat_model.rec_id).first()
+        db_sess.delete(db_rec)
+        db_sess.commit()
+        db_sess.close()
+        return None

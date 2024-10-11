@@ -2,7 +2,7 @@ import json
 import threading
 import random
 import datetime
-from datetime import datetime
+# from datetime import datetime
 from pyexpat.errors import messages
 
 import jwt as jwt
@@ -384,24 +384,37 @@ class RestController:
                 else:
                     return not_found_error(f"Рекомендация с ID {id} не найдена")
             if form.validate_on_submit():
-                rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(user_id, rec_id)
-                if rec:
-                    date = form.date_posted.data
-                    time = form.time_posted.data
-                    dt = datetime(date.year, date.month, date.day, time.hour, time.minute, time.second)
-                    public = 0
-                    if form.public.data:
-                        public = 1
-                    status = RecommendationStatusModel(send_time=dt, rec_header=form.header.data, rec_status_public=public)
-                    self.status_recommendation_service.update_status_recommendation(status)
-                    return redirect('/')
-                else:
-                    return not_found_error(f"Рекомендация с ID {id} не найдена")
+                pass
+                # rec = await self.status_recommendation_service.get_status_recommendation_info_by_id(user_id, rec_id)
+                # if rec:
+                #     date = form.date_posted.data
+                #     time = form.time_posted.data
+                #     dt = datetime(date.year, date.month, date.day, time.hour, time.minute, time.second)
+                #     public = 0
+                #     if form.public.data:
+                #         public = 1
+                #     status = RecommendationStatusModel(send_time=dt, rec_header=form.header.data, rec_status_public=public)
+                #     self.status_recommendation_service.update_status_recommendation(status)
+                #     return redirect('/')
+                # else:
+                #     return not_found_error(f"Рекомендация с ID {id} не найдена")
             return render_template('status.html',
                                    title='Редактирование статуса рекомендации',
                                    form=form,
                                    is_auth=check_authorization_bearer(request)
                                    )
+
+        @self.web.route('/users/<int:user_id>/stat_delete/<int:id>', methods=['GET', 'POST'])
+        async def stat_delete(user_id, id):
+            if not check_authorization_bearer(request):
+                return render_template('auth_error.html', title='Ошибка авторизации')
+
+            stat = await self.status_recommendation_service.get_status_recommendation_info_by_id(user_id, id)
+            if stat:
+                await self.status_recommendation_service.delete_status(stat)
+                return redirect('/')
+            else:
+                return not_found_error(f"Рекомендация с ID {id} не найдена")
 
 
         @self.web.route("/api/public/advice/random", methods=['GET'])

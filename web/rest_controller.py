@@ -7,7 +7,7 @@ from pyexpat.errors import messages
 
 import jwt as jwt
 from flasgger import Swagger
-from flask import Flask, request, make_response, render_template, redirect
+from flask import Flask, request, make_response, render_template, redirect, Response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import LoginManager, login_user, logout_user
@@ -459,7 +459,7 @@ class RestController:
             random_num = random.randint(1, 30)
             recommendation = await self.advent_service.get_recommendation_info_by_id(random_num)
             if recommendation:
-                return json.dumps(recommendation.to_dict(), ensure_ascii=False)
+                return Response(json.dumps(recommendation.to_dict(), ensure_ascii=False), mimetype='application/json')
             else:
                 return internal_error("Не удалось получить рекомендацию")
 
@@ -491,7 +491,7 @@ class RestController:
 
             recommendation = await self.advent_service.get_recommendation_info_by_id(today_day)
             if recommendation:
-                return json.dumps(recommendation.to_dict(), ensure_ascii=False)
+                return Response(json.dumps(recommendation.to_dict(), ensure_ascii=False), mimetype='application/json')
             else:
                 return internal_error("Не удалось получить рекомендацию")
 
